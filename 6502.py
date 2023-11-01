@@ -46,103 +46,106 @@ while(i1<40):
 	zeroPage[i1] = prog[i1]
 	i1+=1
 print(zeroPage)
-oraC = bitarray('000', endian='big')
-andC = bitarray('001', endian='big')
-eorC = bitarray('010', endian='big')
-adcC = bitarray('011', endian='big')
-staC = bitarray('100', endian='big')
-ldaC = bitarray('101', endian='big')
-cmpC = bitarray('110', endian='big')
-sbcC = bitarray('111', endian='big')
 
-aslC = bitarray('000', endian='big')
-rolC = bitarray('001', endian='big')
-lsrC = bitarray('010', endian='big')
-rorC = bitarray('011', endian='big')
-stxC = bitarray('100', endian='big')
-ldxC = bitarray('101', endian='big')
-decC = bitarray('110', endian='big')
-incC = bitarray('111', endian='big')
+class execute():
+	def __init__(self):
+		global r
+	oraC = bitarray('000', endian='big')
+	andC = bitarray('001', endian='big')
+	eorC = bitarray('010', endian='big')
+	adcC = bitarray('011', endian='big')
+	staC = bitarray('100', endian='big')
+	ldaC = bitarray('101', endian='big')
+	cmpC = bitarray('110', endian='big')
+	sbcC = bitarray('111', endian='big')
 
-bplC = bitarray('0001 0000', endian='big')
-bmiC = bitarray('0011 0000', endian='big')
-bvcC = bitarray('0101 0000', endian='big')
-bvsC = bitarray('0111 0000', endian='big')
-bccC = bitarray('1001 0000', endian='big')
-bcsC = bitarray('1011 0000', endian='big')
-bneC = bitarray('1101 0000', endian='big')
-beqC = bitarray('1111 0000', endian='big')
+	aslC = bitarray('000', endian='big')
+	rolC = bitarray('001', endian='big')
+	lsrC = bitarray('010', endian='big')
+	rorC = bitarray('011', endian='big')
+	stxC = bitarray('100', endian='big')
+	ldxC = bitarray('101', endian='big')
+	decC = bitarray('110', endian='big')
+	incC = bitarray('111', endian='big')
 
-brkC = bitarray('0000 0000', endian='big')
-jsrAbsoluteC = bitarray('0010 0000', endian='big')
-rtiC = bitarray('0100 0000', endian='big')
-rtsC = bitarray('0110 0000', endian='big')
+	bplC = bitarray('0001 0000', endian='big')
+	bmiC = bitarray('0011 0000', endian='big')
+	bvcC = bitarray('0101 0000', endian='big')
+	bvsC = bitarray('0111 0000', endian='big')
+	bccC = bitarray('1001 0000', endian='big')
+	bcsC = bitarray('1011 0000', endian='big')
+	bneC = bitarray('1101 0000', endian='big')
+	beqC = bitarray('1111 0000', endian='big')
 
-phpC = bitarray('0000 1000', endian='big')
-plpC = bitarray('0010 1000', endian='big')
-phaC = bitarray('0100 1000', endian='big')
-plaC = bitarray('0110 1000', endian='big')
-deyC = bitarray('1000 1000', endian='big')
-tayC = bitarray('1010 1000', endian='big')
-inyC = bitarray('1100 1000', endian='big')
-inxC = bitarray('1110 1000', endian='big')
+	brkC = bitarray('0000 0000', endian='big')
+	jsrAbsoluteC = bitarray('0010 0000', endian='big')
+	rtiC = bitarray('0100 0000', endian='big')
+	rtsC = bitarray('0110 0000', endian='big')
 
-clcC = bitarray('0001 1000', endian='big')
-secC = bitarray('0011 1000', endian='big')
-cliC = bitarray('0101 1000', endian='big')
-seiC = bitarray('0111 1000', endian='big')
-tyaC = bitarray('1001 1000', endian='big')
-def tya():
-	pass
-clvC = bitarray('1011 1000', endian='big')
-def clv():
-	pass
-cldC = bitarray('1101 1000', endian='big')
-def cld():
-	pass
-sedC = bitarray('1111 1000', endian='big')
-def sed():
-	pass
-#txaC = bitarray('1000 1010', endian='big')
-def txa():
-	print('txa')
-	r.acc = r.regX
-	print('TXA r.acc: ',r.acc)
-	incPC()
-	r.stepCounter = bitarray('0000',endian='big')
-#txsC = bitarray('1001 1010', endian='big')
-def txs():
-	print('txs')
-	r.stackPoint = r.regX
-	print('TXS stack: ',r.stackPoint)
-	incPC()
-	r.stepCounter = bitarray('0000',endian='big')
-#taxC = bitarray('1010 1010', endian='big')
-def tax():
-	print('tax')
-	r.regX = r.acc
-	print('TAX r.regX: ',r.regX)
-	incPC()
-	r.stepCounter = bitarray('0000',endian='big')
-def tsx():
-	global r
-	print('tsx')
-	r.regX = r.stackPoint
-	print('TSX r.regX: ',r.regX)
-	incPC()
-	r.stepCounter = bitarray('0000',endian='big')
-def dex():
-	global r
-	print('dex')
-	r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
-	print('DEX data: ',r.regX)
-	incPC()
-	r.stepCounter = bitarray('0000',endian='big')
-def nop():
-	global r
-	print('nop')
-	incPC()
-	r.stepCounter = bitarray('0000',endian='big')
+	phpC = bitarray('0000 1000', endian='big')
+	plpC = bitarray('0010 1000', endian='big')
+	phaC = bitarray('0100 1000', endian='big')
+	plaC = bitarray('0110 1000', endian='big')
+	deyC = bitarray('1000 1000', endian='big')
+	tayC = bitarray('1010 1000', endian='big')
+	inyC = bitarray('1100 1000', endian='big')
+	inxC = bitarray('1110 1000', endian='big')
+
+	clcC = bitarray('0001 1000', endian='big')
+	secC = bitarray('0011 1000', endian='big')
+	cliC = bitarray('0101 1000', endian='big')
+	seiC = bitarray('0111 1000', endian='big')
+
+	#tyaC = bitarray('1001 1000', endian='big')
+	def tya():
+		pass
+	#clvC = bitarray('1011 1000', endian='big')
+	def clv():
+		pass
+	#cldC = bitarray('1101 1000', endian='big')
+	def cld():
+		pass
+	#sedC = bitarray('1111 1000', endian='big')
+	def sed():
+		pass
+	#txaC = bitarray('1000 1010', endian='big')
+	def txa():
+		print('txa')
+		r.acc = r.regX
+		print('TXA r.acc: ',r.acc)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
+	#txsC = bitarray('1001 1010', endian='big')
+	def txs():
+		print('txs')
+		r.stackPoint = r.regX
+		print('TXS stack: ',r.stackPoint)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
+	#taxC = bitarray('1010 1010', endian='big')
+	def tax():
+		print('tax')
+		r.regX = r.acc
+		print('TAX r.regX: ',r.regX)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
+	def tsx():
+		print('tsx')
+		r.regX = r.stackPoint
+		print('TSX r.regX: ',r.regX)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
+	def dex():
+		print('dex')
+		r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
+		print('DEX data: ',r.regX)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
+	def nop():
+		print('nop')
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
+e = execute()
 
 bitC = bitarray('001', endian='big')
 jmpC = bitarray('010', endian='big')
@@ -865,17 +868,17 @@ def parseOPC():
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	elif(opc1==bitarray('1000 1010', endian='big')):   #no CLD/SED cuz no decimal mode
-		txa()
+		e.txa()
 	elif(opc1==bitarray('1001 1010', endian='big')):
-		txs()
+		e.txs()
 	elif(opc1==bitarray('1010 1010', endian='big')):
-		tax()
+		e.tax()
 	elif(opc1==bitarray('1011 1010', endian='big')):
-		tsx()
+		e.tsx()
 	elif(opc1==bitarray('1100 1010', endian='big')):
-		dex()
+		e.dex()
 	elif(opc1==bitarray('1110 1010', endian='big')):
-		nop()
+		e.nop()
 
 def pressEvent(callback):
 	charBuff.append(callback.name)
