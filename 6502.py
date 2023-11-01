@@ -1,7 +1,6 @@
 import keyboard
 import os
 from bitarray import bitarray
-#ba = bitarray
 
 charBuff = []
 PC = bitarray('0000 0000 0000 0000', endian='big')
@@ -16,11 +15,8 @@ regB = bitarray('1100 0011', endian='big')
 sumReg = bitarray('0011 0011', endian='big')
 ones = bitarray('1111 1111', endian='big')
 zeros = bitarray('0000 0000', endian='big')
-#eAddy = bitarray('0000 0000 0000 0000', endian='big')
 stepCounter = bitarray('0000', endian='big')
 instructReg = bitarray('0000 0000', endian='big')
-#physicalAddy = bitarray('1111 1111 1111 1111')
-#accC = bitarray('010', endian='big')
 
 class registers:
 	def __init__(self,PC,stackPoint,eA,acc,regX,regY,flagReg,ones,zeros,stepCounter,instructReg):
@@ -104,8 +100,6 @@ txaC = bitarray('1000 1010', endian='big')
 txsC = bitarray('1001 1010', endian='big')
 taxC = bitarray('1010 1010', endian='big')
 tsxC = bitarray('1011 1010', endian='big')
-#dexC = bitarray('1100 1010', endian='big')
-#nopC = bitarray('1110 1010', endian='big')
 def tsxC():
 	global r
 	print('tsx')
@@ -141,12 +135,7 @@ g2c = bitarray('10', endian='big')
 g3c = bitarray('00', endian='big')
 
 zeroPageXC = bitarray('000', endian='big')
-#zeroPageC = bitarray('001', endian='big')
-#immediateC = bitarray('010', endian='big')
-#absoluteC = bitarray('011', endian='big')
-#zeroPageYC = bitarray('100', endian='big')
 directZeroPageXC = bitarray('101', endian='big')
-#absoluteYC = bitarray('110', endian='big')
 absoluteXC = bitarray('111', endian='big')
 
 def addEight(count, cIn=0):
@@ -328,7 +317,6 @@ def megaAdder(cIn=0, carry=True, zero=True, neg=True, overflow = True, rA = r.ac
 	y=True
 	if sub:
 		cIn = cIn^r.ones[0]
-		#rA = rA^r.ones
 		rB = rB^r.ones
 		print("ra: ",rA,cIn)
 	if((rA[0]^rB[0])^r.ones[0]):
@@ -369,23 +357,12 @@ def megaAdder(cIn=0, carry=True, zero=True, neg=True, overflow = True, rA = r.ac
 		r.flagReg[7] = cOut
 	if(s7):
 		r.flagReg[0] = s7
-	#if(zero):
 	zF = (s|s1|s2|s3|s4|s5|s6|s7) ^ r.ones[1]
 	print('zF: ',(zF))
 	r.flagReg[6] = (zF)
 	return sumReg, cOut
 def parseOPC():
 	global r
-	'''
-	global immediateC
-	global zeroPageC
-	global accC
-	global absoluteC
-	global zeroPageYC
-	global zeroPageXC
-	global absoluteYC
-	global absoluteXC
-	'''
 	data = bitarray('0000 0000',endian='big')
 	eight = bitarray('0000 1000',endian='big')
 	if(r.stepCounter == bitarray('0000',endian='big')):
@@ -553,7 +530,6 @@ def parseOPC():
 			r.acc = r.acc | data
 			print('ORA r.acc: ',r.acc)
 			megaAdder(carry=False,overflow=False,rB=r.zeros)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==andC):
@@ -564,7 +540,6 @@ def parseOPC():
 			r.acc = r.acc & data
 			print('AND r.acc: ',r.acc)
 			megaAdder(carry=False,overflow=False,rB=r.zeros)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==eorC):
@@ -575,7 +550,6 @@ def parseOPC():
 			r.acc = r.acc ^ data
 			print('EOR r.acc: ',r.acc)
 			megaAdder(carry=False,overflow=False,rB=r.zeros)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==adcC):
@@ -585,7 +559,6 @@ def parseOPC():
 			print('r.acc, data',r.acc,data)
 			r.acc, carryOut = megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data)
 			print('ADC r.acc: ',r.acc)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==staC):
@@ -611,7 +584,6 @@ def parseOPC():
 			r.flagReg[7]=r.zeros[7]
 			megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data, overflow=False, sub=True)
 			print('CMP flags: ',r.flagReg)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==sbcC):
@@ -621,13 +593,11 @@ def parseOPC():
 			print('r.acc, data',r.acc,data)
 			r.acc, carryOut = megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data, sub=True)
 			print('SBC r.acc: ',r.acc)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		else:
 			print('invalid opcode')
 		r.stepCounter = bitarray('0000',endian='big')
-
 	elif(grp == g2c):
 		print('g2')
 		if(opc==aslC):
@@ -644,10 +614,8 @@ def parseOPC():
 			data[5]=data[6]
 			data[6]=data[7]
 			data[7]=r.zeros[7]
-
 			megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
 			print('ASL data: ',data)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==rolC):
@@ -665,10 +633,8 @@ def parseOPC():
 			data[5]=data[6]
 			data[6]=data[7]
 			data[7]=temp
-
 			megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
 			print('ROL data: ',data)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==lsrC):
@@ -685,10 +651,8 @@ def parseOPC():
 			data[2]=data[1]
 			data[1]=data[0]
 			data[0]=r.zeros[0]
-
 			megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
 			print('LSR data: ',data)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==rorC):
@@ -706,10 +670,8 @@ def parseOPC():
 			data[2]=data[1]
 			data[1]=data[0]
 			data[0]=temp
-
 			megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
 			print('ROR data: ',data)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==stxC):
@@ -734,7 +696,6 @@ def parseOPC():
 			print('data',data)
 			megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 			print('DEC data: ',data)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==incC):
@@ -744,14 +705,11 @@ def parseOPC():
 			print('data',data)
 			megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 			print('DEC data: ',data)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		else:
 			print('invalid opcode')
 		r.stepCounter = bitarray('0000',endian='big')
-
-
 	elif(grp == g3c):
 		print('g3')
 		if(opc==bitC):
@@ -775,7 +733,6 @@ def parseOPC():
 			r.flagReg[7]=r.zeros[7]
 			megaAdder(cIn=r.flagReg[7],rA=r.regY, rB=data, overflow=False, sub=True)
 			print('CPX flags: ',r.flagReg)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==rolC):
@@ -788,13 +745,11 @@ def parseOPC():
 			r.flagReg[7]=r.zeros[7]
 			megaAdder(cIn=r.flagReg[7],rA=r.regX, rB=data, overflow=False, sub=True)
 			print('CPX flags: ',r.flagReg)
-
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==rolC):
 			pass
 		r.stepCounter = bitarray('0000',endian='big')
-	
 	elif(opc1==bplC):
 		pass
 	elif(opc1==bmiC):
@@ -811,7 +766,6 @@ def parseOPC():
 		pass
 	elif(opc1==beqC):
 		pass
-
 	elif(opc1==brkC):
 		pass
 	elif(opc1==jsrAbsoluteC):
@@ -820,7 +774,6 @@ def parseOPC():
 		pass
 	elif(opc1==rtsC):
 		pass
-
 	elif(opc1==phpC):
 		pass
 	elif(opc1==plpC):
@@ -833,7 +786,6 @@ def parseOPC():
 		print('dey')
 		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 		print('DEY data: ',r.regX)
-
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	elif(opc1==tayC):
@@ -846,17 +798,14 @@ def parseOPC():
 		print('iny')
 		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
 		print('INY data: ',r.regY)
-
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	elif(opc1==inxC):
 		print('inx')
 		r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
 		print('INX data: ',r.regX)
-
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
-
 	elif(opc1==clcC):
 		print('clc')
 		r.flagReg[7] = r.zeros[7]
@@ -918,7 +867,6 @@ def parseOPC():
 	elif(opc1==bitarray('1110 1010', endian='big')):
 		nop()
 
-
 def pressEvent(callback):
 	charBuff.append(callback.name)
 def quitProg():
@@ -927,16 +875,12 @@ def quitProg():
 	os._exit(1)
 
 
-
-
 print('ACC: ',r.acc)
 print('Step: ',r.stepCounter,'\n')
 print('OPC')
 parseOPC()
 parseOPC()
 print('mem: ',memMap())
-
-
 
 keyboard.on_press(pressEvent)
 keyboard.add_hotkey('ctrl+z', quitProg)
