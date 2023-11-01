@@ -92,15 +92,39 @@ secC = bitarray('0011 1000', endian='big')
 cliC = bitarray('0101 1000', endian='big')
 seiC = bitarray('0111 1000', endian='big')
 tyaC = bitarray('1001 1000', endian='big')
+def tya():
+	pass
 clvC = bitarray('1011 1000', endian='big')
+def clv():
+	pass
 cldC = bitarray('1101 1000', endian='big')
+def cld():
+	pass
 sedC = bitarray('1111 1000', endian='big')
-
-txaC = bitarray('1000 1010', endian='big')
-txsC = bitarray('1001 1010', endian='big')
-taxC = bitarray('1010 1010', endian='big')
-tsxC = bitarray('1011 1010', endian='big')
-def tsxC():
+def sed():
+	pass
+#txaC = bitarray('1000 1010', endian='big')
+def txa():
+	print('txa')
+	r.acc = r.regX
+	print('TXA r.acc: ',r.acc)
+	incPC()
+	r.stepCounter = bitarray('0000',endian='big')
+#txsC = bitarray('1001 1010', endian='big')
+def txs():
+	print('txs')
+	r.stackPoint = r.regX
+	print('TXS stack: ',r.stackPoint)
+	incPC()
+	r.stepCounter = bitarray('0000',endian='big')
+#taxC = bitarray('1010 1010', endian='big')
+def tax():
+	print('tax')
+	r.regX = r.acc
+	print('TAX r.regX: ',r.regX)
+	incPC()
+	r.stepCounter = bitarray('0000',endian='big')
+def tsx():
 	global r
 	print('tsx')
 	r.regX = r.stackPoint
@@ -120,7 +144,6 @@ def nop():
 	incPC()
 	r.stepCounter = bitarray('0000',endian='big')
 
-
 bitC = bitarray('001', endian='big')
 jmpC = bitarray('010', endian='big')
 jmpAbsoluteC = bitarray('011', endian='big')
@@ -128,7 +151,6 @@ styC = bitarray('100', endian='big')
 ldyC = bitarray('101', endian='big')
 cpyC = bitarray('110', endian='big')
 cpxC = bitarray('111', endian='big')
-
 
 g1c = bitarray('01', endian='big')
 g2c = bitarray('10', endian='big')
@@ -382,7 +404,7 @@ def parseOPC():
 		addrMode = bitarray('000',endian='big')
 		opc = instr[:3]
 		addrMode = instr[3:6]
-		addrMode = instr[6:]
+		grp = instr[6:]
 		print(opc,grp,addrMode)
 		print('Step: ',r.stepCounter,'\n')
 		discard, r.stepCounter = inc4bits(r.stepCounter)
@@ -842,24 +864,12 @@ def parseOPC():
 		print('CLV flags: ',r.flagReg)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==txaC):   #no CLD/SED cuz no decimal mode
-		print('txa')
-		r.acc = r.regX
-		print('TXA r.acc: ',r.acc)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==txsC):
-		print('txs')
-		r.stackPoint = r.regX
-		print('TXS stack: ',r.stackPoint)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==taxC):
-		print('tax')
-		r.regX = r.acc
-		print('TAX r.regX: ',r.regX)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
+	elif(opc1==bitarray('1000 1010', endian='big')):   #no CLD/SED cuz no decimal mode
+		txa()
+	elif(opc1==bitarray('1001 1010', endian='big')):
+		txs()
+	elif(opc1==bitarray('1010 1010', endian='big')):
+		tax()
 	elif(opc1==bitarray('1011 1010', endian='big')):
 		tsx()
 	elif(opc1==bitarray('1100 1010', endian='big')):
