@@ -68,34 +68,78 @@ class execute():
 	decC = bitarray('110', endian='big')
 	incC = bitarray('111', endian='big')
 
-	bplC = bitarray('0001 0000', endian='big')
-	bmiC = bitarray('0011 0000', endian='big')
-	bvcC = bitarray('0101 0000', endian='big')
-	bvsC = bitarray('0111 0000', endian='big')
-	bccC = bitarray('1001 0000', endian='big')
-	bcsC = bitarray('1011 0000', endian='big')
-	bneC = bitarray('1101 0000', endian='big')
-	beqC = bitarray('1111 0000', endian='big')
-
-	brkC = bitarray('0000 0000', endian='big')
-	jsrAbsoluteC = bitarray('0010 0000', endian='big')
-	rtiC = bitarray('0100 0000', endian='big')
-	rtsC = bitarray('0110 0000', endian='big')
-
-	phpC = bitarray('0000 1000', endian='big')
-	plpC = bitarray('0010 1000', endian='big')
-	phaC = bitarray('0100 1000', endian='big')
-	plaC = bitarray('0110 1000', endian='big')
-	deyC = bitarray('1000 1000', endian='big')
-	tayC = bitarray('1010 1000', endian='big')
-	inyC = bitarray('1100 1000', endian='big')
-	inxC = bitarray('1110 1000', endian='big')
-
-	clcC = bitarray('0001 1000', endian='big')
-	secC = bitarray('0011 1000', endian='big')
-	cliC = bitarray('0101 1000', endian='big')
-	seiC = bitarray('0111 1000', endian='big')
-
+	#bplC = bitarray('0001 0000', endian='big')
+	def bpl():
+		pass
+	#bmiC = bitarray('0011 0000', endian='big')
+	def bmi():
+		pass
+	#bvcC = bitarray('0101 0000', endian='big')
+	def bvc():
+		pass
+	#bvsC = bitarray('0111 0000', endian='big')
+	def bvs():
+		pass
+	#bccC = bitarray('1001 0000', endian='big')
+	def bcc():
+		pass
+	#bcsC = bitarray('1011 0000', endian='big')
+	def bcs():
+		pass
+	#bneC = bitarray('1101 0000', endian='big')
+	def bne():
+		pass
+	#beqC = bitarray('1111 0000', endian='big')
+	def beq():
+		pass
+	#brkC = bitarray('0000 0000', endian='big')
+	def brk():
+		pass
+	#jsrAbsoluteC = bitarray('0010 0000', endian='big')
+	def jsrAbsolute():
+		pass
+	#rtiC = bitarray('0100 0000', endian='big')
+	def rti():
+		pass
+	#rtsC = bitarray('0110 0000', endian='big')
+	def rts():
+		pass
+	#phpC = bitarray('0000 1000', endian='big')
+	def php():
+		pass
+	#plpC = bitarray('0010 1000', endian='big')
+	def plp():
+		pass
+	#phaC = bitarray('0100 1000', endian='big')
+	def pha():
+		pass
+	#plaC = bitarray('0110 1000', endian='big')
+	def pla():
+		pass
+	#deyC = bitarray('1000 1000', endian='big')
+	def dey():
+		pass
+	#tayC = bitarray('1010 1000', endian='big')
+	def tay():
+		pass
+	#inyC = bitarray('1100 1000', endian='big')
+	def iny():
+		pass
+	#inxC = bitarray('1110 1000', endian='big')
+	def inx()::
+		pass
+	#clcC = bitarray('0001 1000', endian='big')
+	def clc():
+		pass
+	#secC = bitarray('0011 1000', endian='big')
+	def sec():
+		pass
+	#cliC = bitarray('0101 1000', endian='big')
+	def cli():
+		pass
+	#seiC = bitarray('0111 1000', endian='big')
+	def sei():
+		pass
 	#tyaC = bitarray('1001 1000', endian='big')
 	def tya():
 		pass
