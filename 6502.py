@@ -286,25 +286,115 @@ class execute():
 	def eor(self):
 		pass
 	def sta(self):
-		pass
+		print('staC')
+		print('effective address: ',r.eA)
+		memMap(write=True,data=r.acc)
+		print('STA DONE')
+		incPC()
 	def cmp(self):
-		pass
+		print('cmp')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('r.acc, data',r.acc,data)
+		r.flagReg[7]=r.zeros[7]
+		megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data, overflow=False, sub=True)
+		print('CMP flags: ',r.flagReg)
+		incPC()
 	def andInstruct(self):
 		pass
 	def adc(self):
-		pass
+		print('adc')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('r.acc, data',r.acc,data)
+		r.acc, carryOut = megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data)
+		print('ADC r.acc: ',r.acc)
+		incPC()
 	def lda(self):
-		pass
+		print('lda')
+		print('effective address: ',r.eA)
+		data = memMap()
+		r.acc = data
+		print('LDA r.acc: ',r.acc)
+		incPC()
 	def sbc(self):
-		pass
+		print('sbc')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('r.acc, data',r.acc,data)
+		r.acc, carryOut = megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data, sub=True)
+		print('SBC r.acc: ',r.acc)
+		incPC()
 	def asl(self):
-		pass
+		print('asl')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('data',data)
+		r.flagReg[7]=data[0]
+		data[0]=data[1]
+		data[1]=data[2]
+		data[2]=data[3]
+		data[3]=data[4]
+		data[4]=data[5]
+		data[5]=data[6]
+		data[6]=data[7]
+		data[7]=r.zeros[7]
+		megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
+		print('ASL data: ',data)
+		incPC()
 	def rol(self):
-		pass
+		print('rol')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('data',data)
+		temp = r.flagReg[7]
+		r.flagReg[7]=data[0]
+		data[0]=data[1]
+		data[1]=data[2]
+		data[2]=data[3]
+		data[3]=data[4]
+		data[4]=data[5]
+		data[5]=data[6]
+		data[6]=data[7]
+		data[7]=temp
+		megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
+		print('ROL data: ',data)
+		incPC()
 	def lsr(self):
-		pass
+		print('lsr')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('data',data)
+		r.flagReg[7]=data[7]
+		data[7]=data[6]
+		data[6]=data[5]
+		data[5]=data[4]
+		data[4]=data[3]
+		data[3]=data[2]
+		data[2]=data[1]
+		data[1]=data[0]
+		data[0]=r.zeros[0]
+		megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
+		print('LSR data: ',data)
+		incPC()
 	def ror(self):
-		pass
+		print('ror')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('data',data)
+		temp = r.flagReg[7]
+		r.flagReg[7]=data[7]
+		data[7]=data[6]
+		data[6]=data[5]
+		data[5]=data[4]
+		data[4]=data[3]
+		data[3]=data[2]
+		data[2]=data[1]
+		data[1]=data[0]
+		data[0]=temp
+		megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
+		print('ROR data: ',data)
+		incPC()
 	def stx(self):
 		print('staC')
 		print('effective address: ',r.eA)
@@ -1046,129 +1136,6 @@ def parseOPC():
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
 		elif(opc==adcC):
-			print('adc')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('r.acc, data',r.acc,data)
-			r.acc, carryOut = megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data)
-			print('ADC r.acc: ',r.acc)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==staC):
-			print('staC')
-			print('effective address: ',r.eA)
-			memMap(write=True,data=r.acc)
-			print('STA DONE')
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==ldaC):
-			print('lda')
-			print('effective address: ',r.eA)
-			data = memMap()
-			r.acc = data
-			print('LDA r.acc: ',r.acc)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==cmpC):
-			print('cmp')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('r.acc, data',r.acc,data)
-			r.flagReg[7]=r.zeros[7]
-			megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data, overflow=False, sub=True)
-			print('CMP flags: ',r.flagReg)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==sbcC):
-			print('sbc')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('r.acc, data',r.acc,data)
-			r.acc, carryOut = megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data, sub=True)
-			print('SBC r.acc: ',r.acc)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		else:
-			print('invalid opcode')
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(grp == g2c):
-		print('g2')
-		if(opc==aslC):
-			print('asl')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('data',data)
-			r.flagReg[7]=data[0]
-			data[0]=data[1]
-			data[1]=data[2]
-			data[2]=data[3]
-			data[3]=data[4]
-			data[4]=data[5]
-			data[5]=data[6]
-			data[6]=data[7]
-			data[7]=r.zeros[7]
-			megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
-			print('ASL data: ',data)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==rolC):
-			print('rol')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('data',data)
-			temp = r.flagReg[7]
-			r.flagReg[7]=data[0]
-			data[0]=data[1]
-			data[1]=data[2]
-			data[2]=data[3]
-			data[3]=data[4]
-			data[4]=data[5]
-			data[5]=data[6]
-			data[6]=data[7]
-			data[7]=temp
-			megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
-			print('ROL data: ',data)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==lsrC):
-			print('lsr')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('data',data)
-			r.flagReg[7]=data[7]
-			data[7]=data[6]
-			data[6]=data[5]
-			data[5]=data[4]
-			data[4]=data[3]
-			data[3]=data[2]
-			data[2]=data[1]
-			data[1]=data[0]
-			data[0]=r.zeros[0]
-			megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
-			print('LSR data: ',data)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==rorC):
-			print('ror')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('data',data)
-			temp = r.flagReg[7]
-			r.flagReg[7]=data[7]
-			data[7]=data[6]
-			data[6]=data[5]
-			data[5]=data[4]
-			data[4]=data[3]
-			data[3]=data[2]
-			data[2]=data[1]
-			data[1]=data[0]
-			data[0]=temp
-			megaAdder(cIn=r.flagReg[7],rA=data, rB=r.zeros, overflow=False)
-			print('ROR data: ',data)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-
-					
 			
 
 '''
