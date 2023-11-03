@@ -251,7 +251,10 @@ class execute():
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	def bit(self):
-		pass
+		print('bit')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('r.acc, data',r.acc,data)
 	def jmp(self):
 		pass
 	def jmpAbsolute(self):
@@ -261,9 +264,23 @@ class execute():
 	def ldy(self):
 		pass
 	def cpy(self):
-		pass
+		print('cpy')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('y, data',r.regY,data)
+		r.flagReg[7]=r.zeros[7]
+		megaAdder(cIn=r.flagReg[7],rA=r.regY, rB=data, overflow=False, sub=True)
+		print('CPX flags: ',r.flagReg)
+		incPC()
 	def cpx(self):
-		pass
+		print('cpx')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('x, data',r.regX,data)
+		r.flagReg[7]=r.zeros[7]
+		megaAdder(cIn=r.flagReg[7],rA=r.regX, rB=data, overflow=False, sub=True)
+		print('CPX flags: ',r.flagReg)
+		incPC()
 	def ora(self):
 		pass
 	def eor(self):
@@ -289,13 +306,34 @@ class execute():
 	def ror(self):
 		pass
 	def stx(self):
-		pass
+		print('staC')
+		print('effective address: ',r.eA)
+		memMap(write=True,data=r.regX)
+		print('STX DONE')
+		incPC()
 	def ldx(self):
-		pass
+		print('ldx')
+		print('effective address: ',r.eA)
+		data = memMap()
+		r.regX = data
+		print('LDX r.acc: ',r.acc)
+		incPC()
 	def dec(self):
-		pass
+		print('dec')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('data',data)
+		megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
+		print('DEC data: ',data)
+		incPC()
 	def inc(self):
-		print('INKIN THAT MENT')
+		print('inc')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('data',data)
+		megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
+		print('DEC data: ',data)
+		incPC()
 e = execute()
 
 bitC = bitarray('001', endian='big')
@@ -1129,144 +1167,10 @@ def parseOPC():
 			print('ROR data: ',data)
 			incPC()
 			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==stxC):
-			print('staC')
-			print('effective address: ',r.eA)
-			memMap(write=True,data=r.regX)
-			print('STX DONE')
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==ldxC):
-			print('ldx')
-			print('effective address: ',r.eA)
-			data = memMap()
-			r.regX = data
-			print('LDX r.acc: ',r.acc)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==decC):
-			print('dec')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('data',data)
-			megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
-			print('DEC data: ',data)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==incC):
-			print('inc')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('data',data)
-			megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
-			print('DEC data: ',data)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		else:
-			print('invalid opcode')
-		r.stepCounter = bitarray('0000',endian='big')
 
-	elif(grp == g3c):
-		print('g3')
-		if(opc==bitC):
-			print('bit')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('r.acc, data',r.acc,data)
-		elif(opc==jmpC):
-			pass
-		elif(opc==jmpAbsoluteC):
-			pass
-		elif(opc==styC):
-			pass
-		elif(opc==ldyC):
-			pass
-		elif(opc==cpyC):
-			print('cpy')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('y, data',r.regY,data)
-			r.flagReg[7]=r.zeros[7]
-			megaAdder(cIn=r.flagReg[7],rA=r.regY, rB=data, overflow=False, sub=True)
-			print('CPX flags: ',r.flagReg)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==cpxC):
-			print('cpx')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('x, data',r.regX,data)
-			r.flagReg[7]=r.zeros[7]
-			megaAdder(cIn=r.flagReg[7],rA=r.regX, rB=data, overflow=False, sub=True)
-			print('CPX flags: ',r.flagReg)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		r.stepCounter = bitarray('0000',endian='big')
+					
+			
 
-	elif(opc1==bitarray('0001 0000', endian='big')):
-		e.bpl()
-	elif(opc1==bitarray('0011 0000', endian='big')):
-		e.bmi()
-	elif(opc1==bitarray('0101 0000', endian='big')):
-		e.bvc()
-	elif(opc1==bitarray('0111 0000', endian='big')):
-		e.bvs()
-	elif(opc1==bitarray('1001 0000', endian='big')):
-		e.bcc()
-	elif(opc1==bitarray('1011 0000', endian='big')):
-		e.bcs()
-	elif(opc1==bitarray('1101 0000', endian='big')):
-		e.bne()
-	elif(opc1==bitarray('1111 0000', endian='big')):
-		e.beq()
-	elif(opc1==bitarray('0000 0000', endian='big')):
-		e.brk()
-	elif(opc1==bitarray('0010 0000', endian='big')):
-		e.jsrAbsolute()
-	elif(opc1==bitarray('0100 0000', endian='big')):
-		e.rti()
-	elif(opc1==bitarray('0110 0000', endian='big')):
-		e.rts()
-	elif(opc1==bitarray('0000 1000', endian='big')):
-		e.php()
-	elif(opc1==bitarray('0010 1000', endian='big')):
-		e.plp()
-	elif(opc1==bitarray('0100 1000', endian='big')):
-		e.phaC()
-	elif(opc1==bitarray('0110 1000', endian='big')):
-		e.pla()
-	elif(opc1==bitarray('1000 1000', endian='big')):
-		e.dey()
-	elif(opc1==bitarray('1010 1000', endian='big')):
-		e.tay()
-	elif(opc1==bitarray('1100 1000', endian='big')):
-		e.iny()
-	elif(opc1==bitarray('1110 1000', endian='big')):
-		e.inx()
-	elif(opc1==bitarray('0001 1000', endian='big')):
-		e.clc()
-	elif(opc1==bitarray('0011 1000', endian='big')):
-		e.sec()
-	elif(opc1==bitarray('0101 1000', endian='big')):
-		e.cli()
-	elif(opc1==bitarray('0111 1000', endian='big')):
-		e.sei()
-	elif(opc1==bitarray('1001 1000', endian='big')):
-		e.tya()
-	elif(opc1==bitarray('1011 1000', endian='big')):
-		e.clv()
-	elif(opc1==bitarray('1000 1010', endian='big')):   #no CLD/SED cuz no decimal mode
-		e.txa()
-	elif(opc1==bitarray('1001 1010', endian='big')):
-		e.txs()
-	elif(opc1==bitarray('1010 1010', endian='big')):
-		e.tax()
-	elif(opc1==bitarray('1011 1010', endian='big')):
-		e.tsx()
-	elif(opc1==bitarray('1100 1010', endian='big')):
-		e.dex()
-	elif(opc1==bitarray('1110 1010', endian='big')):
-		e.nop()
 '''
 
 
