@@ -31,6 +31,26 @@ class registers:
 		self.zeros = zeros
 		self.stepCounter = stepCounter
 		self.instructReg = instructReg
+	def updateEA():
+		self.eA[1:] = self.PC
+
+		self.eA[1] = self.eA[4]
+		self.eA[2] = self.eA[5]
+		self.eA[3] = self.eA[6]
+		self.eA[4] = self.eA[7]
+		self.eA[5] = self.eA[8]
+		self.eA[6] = self.eA[9]
+		self.eA[7] = self.eA[10]
+		self.eA[8] = self.eA[11]
+		self.eA[9] = self.eA[12]
+		self.eA[10] = self.eA[13]
+		self.eA[11] = self.eA[14]
+		self.eA[12] = self.eA[15]
+		self.eA[13] = self.eA[16]
+		self.eA[14] = self.zeros[0]
+		self.eA[15] = self.zeros[0]
+		self.eA[16] = self.zeros[0]
+
 
 r = registers(PC,stackPoint,eA,acc,regX,regY,flagReg,ones,zeros,stepCounter,instructReg)
 
@@ -824,32 +844,8 @@ def parseOPC():
 	global r
 	data = bitarray('0000 0000',endian='big')
 	eight = bitarray('0000 1000',endian='big')
-	if(r.stepCounter == bitarray('0000',endian='big')):
-		print('fetchdatshi')
-		print(r.eA,'\n')
-		data = memMap()
-		r.instructReg = data
-		print('Step: ',r.stepCounter,'\n')
-		discard, r.stepCounter = inc4bits(r.stepCounter)
-		print('Step: ',r.stepCounter,'\n')
-	if(r.stepCounter == bitarray('0001',endian='big')):
-		print('in step 2')
-		instr = bitarray('0000 0000',endian='big')
-		instr = r.instructReg
-		opc = bitarray('000',endian='big')
-		grp = bitarray('00',endian='big')
-		addrMode = bitarray('000',endian='big')
-		opc = instr[:3]
-		addrMode = instr[3:6]
-		grp = instr[6:]
-		print(opc,grp,addrMode)
-		print('Step: ',r.stepCounter,'\n')
-		discard, r.stepCounter = inc4bits(r.stepCounter)
-		print('Step: ',r.stepCounter,'\n')
-	opc1 = bitarray('0000 0000',endian='big')
-	opc1[0:3] = opc
-	opc1[3:6] = addrMode
-	opc1[6:8] = grp
+
+
 
 	if(addrMode==bitarray('010', endian='big')):
 		print('using immediate addr')
@@ -977,44 +973,6 @@ def parseOPC():
 		r.eA[15] = r.zeros[0]
 		r.eA[16] = r.zeros[0]
 		print('pc, ea ',r.PC,r.eA)
-
-
-	LUT = [ ( bitarray('1110 1010', endian='big') , e.nop ) , ( bitarray('1110 1010', endian='big') , e.dex ),
-			( bitarray('1011 1010', endian='big') , e.tsx ) , ( bitarray('1110 1010', endian='big') , e.tax ),
-			( bitarray('1001 1010', endian='big') , e.txs ) , ( bitarray('1000 1010', endian='big') , e.txa ),
-			( bitarray('1011 1000', endian='big') , e.clv ) , ( bitarray('1001 1000', endian='big') , e.tya ),
-
-			( bitarray('0111 1000', endian='big') , e.sei ) , ( bitarray('0101 1000', endian='big') , e.cli ),
-			( bitarray('0011 1000', endian='big') , e.sec ) , ( bitarray('0001 1000', endian='big') , e.clc ),
-			( bitarray('1110 1000', endian='big') , e.inx ) , ( bitarray('1100 1000', endian='big') , e.iny ),
-			( bitarray('1010 1000', endian='big') , e.tay ) , ( bitarray('1000 1000', endian='big') , e.dey ),
-
-			( bitarray('0110 1000', endian='big') , e.pla ) , ( bitarray('0100 1000', endian='big') , e.pha ),
-			( bitarray('0010 1000', endian='big') , e.plp ) , ( bitarray('0000 1000', endian='big') , e.php ),
-			( bitarray('0110 0000', endian='big') , e.rts ) , ( bitarray('0100 0000', endian='big') , e.rti ),
-			( bitarray('0010 0000', endian='big') , e.jsrAbsolute ) , ( bitarray('0000 0000', endian='big') , e.brk ),
-
-			( bitarray('1111 0000', endian='big') , e.beq ) , ( bitarray('1101 0000', endian='big') , e.bne ),
-			( bitarray('1011 0000', endian='big') , e.bcs ) , ( bitarray('1001 0000', endian='big') , e.bcc ),
-			( bitarray('0111 0000', endian='big') , e.bvs ) , ( bitarray('0101 0000', endian='big') , e.bvc ),
-			( bitarray('0011 0000', endian='big') , e.bmi ) , ( bitarray('0001 0000', endian='big') , e.bpl ),
-
-			( bitarray('111x xx00', endian='big') , e.cpx ) ,         ( bitarray('110x xx00', endian='big') , e.cpy ), 
-			( bitarray('101x xx00', endian='big') , e.ldy ) ,         ( bitarray('100x xx00', endian='big') , e.sty ), 
-			( bitarray('011x xx00', endian='big') , e.jmpAbsolute ) , ( bitarray('010x xx00', endian='big') , e.jmp ),
-			( bitarray('001x xx00', endian='big') , e.bit ),
-
-			( bitarray('111x xx10', endian='big') , e.inc ) , ( bitarray('110x xx10', endian='big') , e.dec ),
-			( bitarray('101x xx10', endian='big') , e.ldx ) , ( bitarray('100x xx10', endian='big') , e.stx ),
-			( bitarray('011x xx10', endian='big') , e.ror ) , ( bitarray('010x xx10', endian='big') , e.lsr ),
-			( bitarray('001x xx10', endian='big') , e.rol ) , ( bitarray('000x xx10', endian='big') , e.asl ),
-
-			( bitarray('111x xx01', endian='big') , e.sbc ) , ( bitarray('110x xx01', endian='big') , e.cmp ),
-			( bitarray('101x xx01', endian='big') , e.lda ) , ( bitarray('100x xx01', endian='big') , e.sta ),
-			( bitarray('011x xx01', endian='big') , e.adc ) , ( bitarray('010x xx01', endian='big') , e.eor ),
-			( bitarray('001x xx01', endian='big') , e.andInstruct ) , ( bitarray('000x xx01', endian='big') , e.ora ) ]
-
-
 
 	# tried to use match. it did not work
 	'''if(grp == g1c):
