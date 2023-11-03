@@ -68,214 +68,214 @@ class execute():
 	incC = bitarray('111', endian='big')
 
 	#bplC = bitarray('0001 0000', endian='big')
-	def bpl():
+	def bpl(self):
 		pass
 	#bmiC = bitarray('0011 0000', endian='big')
-	def bmi():
+	def bmi(self):
 		pass
 	#bvcC = bitarray('0101 0000', endian='big')
-	def bvc():
+	def bvc(self):
 		pass
 	#bvsC = bitarray('0111 0000', endian='big')
-	def bvs():
+	def bvs(self):
 		pass
 	#bccC = bitarray('1001 0000', endian='big')
-	def bcc():
+	def bcc(self):
 		pass
 	#bcsC = bitarray('1011 0000', endian='big')
-	def bcs():
+	def bcs(self):
 		pass
 	#bneC = bitarray('1101 0000', endian='big')
-	def bne():
+	def bne(self):
 		pass
 	#beqC = bitarray('1111 0000', endian='big')
-	def beq():
+	def beq(self):
 		pass
 
 
 	#brkC = bitarray('0000 0000', endian='big')
-	def brk():
+	def brk(self):
 		pass
 	#jsrAbsoluteC = bitarray('0010 0000', endian='big')
-	def jsrAbsolute():
+	def jsrAbsolute(self):
 		pass
 	#rtiC = bitarray('0100 0000', endian='big')
-	def rti():
+	def rti(self):
 		pass
 	#rtsC = bitarray('0110 0000', endian='big')
-	def rts():
+	def rts(self):
 		pass
 	#phpC = bitarray('0000 1000', endian='big')
-	def php():
+	def php(self):
 		pass
 	#plpC = bitarray('0010 1000', endian='big')
-	def plp():
+	def plp(self):
 		pass
 	#phaC = bitarray('0100 1000', endian='big')
-	def pha():
+	def pha(self):
 		pass
 	#plaC = bitarray('0110 1000', endian='big')
-	def pla():
+	def pla(self):
 		pass
 	#deyC = bitarray('1000 1000', endian='big')
-	def dey():
+	def dey(self):
 		print('dey')
 		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 		print('DEY data: ',r.regX)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#tayC = bitarray('1010 1000', endian='big')
-	def tay():
+	def tay(self):
 		print('tay')
 		r.regY = r.acc
 		print('TAY r.regY: ',r.regY)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#inyC = bitarray('1100 1000', endian='big')
-	def iny():
+	def iny(self):
 		print('iny')
 		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
 		print('INY data: ',r.regY)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#inxC = bitarray('1110 1000', endian='big')
-	def inx():
+	def inx(self):
 		print('inx')
 		r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
 		print('INX data: ',r.regX)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#clcC = bitarray('0001 1000', endian='big')
-	def clc():
+	def clc(self):
 		print('clc')
 		r.flagReg[7] = r.zeros[7]
 		print('CLC flags: ',r.flagReg)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#secC = bitarray('0011 1000', endian='big')
-	def sec():
+	def sec(self):
 		print('sec')
 		r.flagReg[7] = r.ones[7]
 		print('SEC flags: ',r.flagReg)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#cliC = bitarray('0101 1000', endian='big')
-	def cli():
+	def cli(self):
 		print('cli')
 		r.flagReg[5] = r.zeros[7]
 		print('CLI flags: ',r.flagReg)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#seiC = bitarray('0111 1000', endian='big')
-	def sei():
+	def sei(self):
 		print('sei')
 		r.flagReg[5] = r.ones[7]
 		print('SEI flags: ',r.flagReg)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#tyaC = bitarray('1001 1000', endian='big')
-	def tya():
+	def tya(self):
 		print('tya')
 		r.acc = r.regY
 		print('TYA r.acc: ',r.acc)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#clvC = bitarray('1011 1000', endian='big')
-	def clv():
+	def clv(self):
 		print('clv')
 		r.flagReg[1] = r.zeros[7]
 		print('CLV flags: ',r.flagReg)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#cldC = bitarray('1101 1000', endian='big')
-	def cld():
+	def cld(self):
 		pass
 	#sedC = bitarray('1111 1000', endian='big')
-	def sed():
+	def sed(self):
 		pass
 	#txaC = bitarray('1000 1010', endian='big')
-	def txa():
+	def txa(self):
 		print('txa')
 		r.acc = r.regX
 		print('TXA r.acc: ',r.acc)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#txsC = bitarray('1001 1010', endian='big')
-	def txs():
+	def txs(self):
 		print('txs')
 		r.stackPoint = r.regX
 		print('TXS stack: ',r.stackPoint)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
 	#taxC = bitarray('1010 1010', endian='big')
-	def tax():
+	def tax(self):
 		print('tax')
 		r.regX = r.acc
 		print('TAX r.regX: ',r.regX)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
-	def tsx():
+	def tsx(self):
 		print('tsx')
 		r.regX = r.stackPoint
 		print('TSX r.regX: ',r.regX)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
-	def dex():
+	def dex(self):
 		print('dex')
 		r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 		print('DEX data: ',r.regX)
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
-	def nop():
+	def nop(self):
 		print('nop')
 		incPC()
 		r.stepCounter = bitarray('0000',endian='big')
-	def bit():
+	def bit(self):
 		pass
-	def jmp():
+	def jmp(self):
 		pass
-	def jmpAbsolute():
+	def jmpAbsolute(self):
 		pass
-	def sty():
+	def sty(self):
 		pass
-	def ldy():
+	def ldy(self):
 		pass
-	def cpy():
+	def cpy(self):
 		pass
-	def cpx():
+	def cpx(self):
 		pass
-	def ora():
+	def ora(self):
 		pass
-	def eor():
+	def eor(self):
 		pass
-	def sta():
+	def sta(self):
 		pass
-	def cmp():
+	def cmp(self):
 		pass
-	def andInstruct():
+	def andInstruct(self):
 		pass
-	def adc():
+	def adc(self):
 		pass
-	def lda():
+	def lda(self):
 		pass
-	def sbc():
+	def sbc(self):
 		pass
-	def asl():
+	def asl(self):
 		pass
-	def rol():
+	def rol(self):
 		pass
-	def lsr():
+	def lsr(self):
 		pass
-	def ror():
+	def ror(self):
 		pass
-	def stx():
+	def stx(self):
 		pass
-	def ldx():
+	def ldx(self):
 		pass
-	def dec():
+	def dec(self):
 		pass
-	def inc():
-		pass
+	def inc(self):
+		print('INKIN THAT MENT')
 e = execute()
 
 bitC = bitarray('001', endian='big')
@@ -524,44 +524,6 @@ def fetch():
 	data = memMap()
 	r.instructReg = data
 
-def decode():
-	# Set the address mode bits in LUT to 0 . Then do a binary search on the input instruction. If no matching instruction is found, round down.
-	LUT = [ ( bitarray('1110 1010', endian='big') , e.nop ) , ( bitarray('1110 1010', endian='big') , e.dex ),
-			( bitarray('1011 1010', endian='big') , e.tsx ) , ( bitarray('1110 1010', endian='big') , e.tax ),
-			( bitarray('1001 1010', endian='big') , e.txs ) , ( bitarray('1000 1010', endian='big') , e.txa ),
-			( bitarray('1011 1000', endian='big') , e.clv ) , ( bitarray('1001 1000', endian='big') , e.tya ),
-
-			( bitarray('0111 1000', endian='big') , e.sei ) , ( bitarray('0101 1000', endian='big') , e.cli ),
-			( bitarray('0011 1000', endian='big') , e.sec ) , ( bitarray('0001 1000', endian='big') , e.clc ),
-			( bitarray('1110 1000', endian='big') , e.inx ) , ( bitarray('1100 1000', endian='big') , e.iny ),
-			( bitarray('1010 1000', endian='big') , e.tay ) , ( bitarray('1000 1000', endian='big') , e.dey ),
-
-			( bitarray('0110 1000', endian='big') , e.pla )         , ( bitarray('0100 1000', endian='big') , e.pha ),
-			( bitarray('0010 1000', endian='big') , e.plp )         , ( bitarray('0000 1000', endian='big') , e.php ),
-			( bitarray('0110 0000', endian='big') , e.rts )         , ( bitarray('0100 0000', endian='big') , e.rti ),
-			( bitarray('0010 0000', endian='big') , e.jsrAbsolute ) , ( bitarray('0000 0000', endian='big') , e.brk ),
-
-			( bitarray('1111 0000', endian='big') , e.beq ) , ( bitarray('1101 0000', endian='big') , e.bne ),
-			( bitarray('1011 0000', endian='big') , e.bcs ) , ( bitarray('1001 0000', endian='big') , e.bcc ),
-			( bitarray('0111 0000', endian='big') , e.bvs ) , ( bitarray('0101 0000', endian='big') , e.bvc ),
-			( bitarray('0011 0000', endian='big') , e.bmi ) , ( bitarray('0001 0000', endian='big') , e.bpl ),
-
-			( bitarray('111x xx00', endian='big') , e.cpx )         , ( bitarray('110x xx00', endian='big') , e.cpy ), 
-			( bitarray('101x xx00', endian='big') , e.ldy )         , ( bitarray('100x xx00', endian='big') , e.sty ), 
-			( bitarray('011x xx00', endian='big') , e.jmpAbsolute ) , ( bitarray('010x xx00', endian='big') , e.jmp ),
-			( bitarray('001x xx00', endian='big') , e.bit ),
-
-			( bitarray('111x xx10', endian='big') , e.inc ) , ( bitarray('110x xx10', endian='big') , e.dec ),
-			( bitarray('101x xx10', endian='big') , e.ldx ) , ( bitarray('100x xx10', endian='big') , e.stx ),
-			( bitarray('011x xx10', endian='big') , e.ror ) , ( bitarray('010x xx10', endian='big') , e.lsr ),
-			( bitarray('001x xx10', endian='big') , e.rol ) , ( bitarray('000x xx10', endian='big') , e.asl ),
-
-			( bitarray('111x xx01', endian='big') , e.sbc )         , ( bitarray('110x xx01', endian='big') , e.cmp ),
-			( bitarray('101x xx01', endian='big') , e.lda )         , ( bitarray('100x xx01', endian='big') , e.sta ),
-			( bitarray('011x xx01', endian='big') , e.adc )         , ( bitarray('010x xx01', endian='big') , e.eor ),
-			( bitarray('001x xx01', endian='big') , e.andInstruct ) , ( bitarray('000x xx01', endian='big') , e.ora ) ]
-
-
 #Sorting input array, by hand :(
 '''LUT = [ ( bitarray('1110 1010', endian='big') , e.nop ) , ( bitarray('1110 1010', endian='big') , e.dex ),
 			( bitarray('1011 1010', endian='big') , e.tsx ) , ( bitarray('1110 1010', endian='big') , e.tax ),
@@ -779,9 +741,84 @@ def search(instruction):
 			low = mid + 1
 			mid = ( high + low ) // 2
 	key = LUT[mid+1]
-	key = key[0]
 	print('no find', key)
 	return(key)
+
+class doAddressMode:
+	def zeroPageX(self):
+		pass
+	def zeroPage(self):
+		pass
+	def absoluteX(self):
+		print('SUSSY ADDY MODE LIT')
+	def immediate(self):
+		pass
+	def absolute(self):
+		pass
+	def zeroPageY(self):
+		pass
+	def zeroPageXOther(self):
+		pass
+	def absoluteY(self):
+		pass
+	def accumulator(self):
+		pass
+dam = doAddressMode()
+def getAddr(instruction):
+	found = search(instruction)
+	foundIns = found[0]
+	addrM = foundIns[5:]
+	grp = foundIns[:2]
+	if(addrM==bitarray('111',endian='big')):
+		if(grp == bitarray('01',endian='big')):
+			if(addrM==bitarray('000',endian='big')):
+				dam.zeroPageX()
+			elif(addrM==bitarray('001',endian='big')):
+				dam.zeroPage()
+			elif(addrM==bitarray('010',endian='big')):
+				dam.immediate()
+			elif(addrM==bitarray('011',endian='big')):
+				dam.absolute()
+			elif(addrM==bitarray('100',endian='big')):
+				dam.zeroPageY()
+			elif(addrM==bitarray('101',endian='big')):
+				dam.zeroPageXOther()
+			elif(addrM==bitarray('110',endian='big')):
+				dam.absoluteY()
+			elif(addrM==bitarray('111',endian='big')):
+				dam.absoluteX()
+		elif(grp == bitarray('10',endian='big')):
+			if(addrM==bitarray('000',endian='big')):
+				dam.immediate()
+			elif(addrM==bitarray('001',endian='big')):
+				dam.zeroPage()
+			elif(addrM==bitarray('010',endian='big')):
+				dam.accumulator()
+			elif(addrM==bitarray('011',endian='big')):
+				dam.absolute()
+			elif(addrM==bitarray('101',endian='big')):
+				dam.zeroPageXOther()
+			elif(addrM==bitarray('111',endian='big')):
+				dam.absoluteX()
+		elif(grp == bitarray('00',endian='big')):
+			if(addrM==bitarray('000',endian='big')):
+				dam.immediate()
+			elif(addrM==bitarray('001',endian='big')):
+				dam.zeroPage()
+			elif(addrM==bitarray('011',endian='big')):
+				dam.absolute()
+			elif(addrM==bitarray('101',endian='big')):
+				dam.zeroPageXOther()
+			elif(addrM==bitarray('111',endian='big')):
+				dam.absoluteX()
+
+	found[1]()
+	return found
+
+def cycle():
+	global r
+	fetch()
+	getAddr(r.instructReg)
 
 def parseOPC():
 	global r
@@ -1281,8 +1318,8 @@ def quitProg():
 	print('tryna quit...')
 	keyboard.unhook_all()
 	os._exit(1)
-ins1 = bitarray('00 111100', endian='big')
-foundins = search(ins1)
+ins1 = bitarray('1110 1010', endian='big')
+foundins = getAddr(ins1)
 print('DIS DA INSTRUCTION',foundins)
 print('ACC: ',r.acc)
 print('Step: ',r.stepCounter,'\n')
