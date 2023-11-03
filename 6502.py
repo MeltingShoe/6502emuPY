@@ -118,34 +118,74 @@ class execute():
 		pass
 	#deyC = bitarray('1000 1000', endian='big')
 	def dey():
-		pass
+		print('dey')
+		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
+		print('DEY data: ',r.regX)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#tayC = bitarray('1010 1000', endian='big')
 	def tay():
-		pass
+		print('tay')
+		r.regY = r.acc
+		print('TAY r.regY: ',r.regY)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#inyC = bitarray('1100 1000', endian='big')
 	def iny():
-		pass
+		print('iny')
+		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
+		print('INY data: ',r.regY)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#inxC = bitarray('1110 1000', endian='big')
-	def inx()::
-		pass
+	def inx():
+		print('inx')
+		r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
+		print('INX data: ',r.regX)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#clcC = bitarray('0001 1000', endian='big')
 	def clc():
-		pass
+		print('clc')
+		r.flagReg[7] = r.zeros[7]
+		print('CLC flags: ',r.flagReg)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#secC = bitarray('0011 1000', endian='big')
 	def sec():
-		pass
+		print('sec')
+		r.flagReg[7] = r.ones[7]
+		print('SEC flags: ',r.flagReg)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#cliC = bitarray('0101 1000', endian='big')
 	def cli():
-		pass
+		print('cli')
+		r.flagReg[5] = r.zeros[7]
+		print('CLI flags: ',r.flagReg)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#seiC = bitarray('0111 1000', endian='big')
 	def sei():
-		pass
+		print('sei')
+		r.flagReg[5] = r.ones[7]
+		print('SEI flags: ',r.flagReg)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#tyaC = bitarray('1001 1000', endian='big')
 	def tya():
-		pass
+		print('tya')
+		r.acc = r.regY
+		print('TYA r.acc: ',r.acc)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#clvC = bitarray('1011 1000', endian='big')
 	def clv():
-		pass
+		print('clv')
+		r.flagReg[1] = r.zeros[7]
+		print('CLV flags: ',r.flagReg)
+		incPC()
+		r.stepCounter = bitarray('0000',endian='big')
 	#cldC = bitarray('1101 1000', endian='big')
 	def cld():
 		pass
@@ -292,7 +332,7 @@ def incPC():
 	r.PC[14]=ddd[2]
 	r.PC[15]=ddd[3]
 
-	r.eA = r.PC
+	r.eA[1:] = r.PC
 
 	r.eA[1] = r.eA[4]
 	r.eA[2] = r.eA[5]
@@ -430,6 +470,16 @@ def megaAdder(cIn=0, carry=True, zero=True, neg=True, overflow = True, rA = r.ac
 	print('zF: ',(zF))
 	r.flagReg[6] = (zF)
 	return sumReg, cOut
+def fetch():
+	global r
+	print('fetchdatshi')
+	print(r.eA,'\n')
+	data = memMap()
+	r.instructReg = data
+
+def decode():
+	pass
+
 def parseOPC():
 	global r
 	data = bitarray('0000 0000',endian='big')
@@ -851,66 +901,36 @@ def parseOPC():
 		pass
 	elif(opc1==plaC):
 		pass
-	elif(opc1==deyC):
-		print('dey')
-		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
-		print('DEY data: ',r.regX)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==tayC):
-		print('tay')
-		r.regY = r.acc
-		print('TAY r.regY: ',r.regY)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==inyC):
-		print('iny')
-		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
-		print('INY data: ',r.regY)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==inxC):
-		print('inx')
-		r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
-		print('INX data: ',r.regX)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==clcC):
-		print('clc')
-		r.flagReg[7] = r.zeros[7]
-		print('CLC flags: ',r.flagReg)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==secC):
-		print('sec')
-		r.flagReg[7] = r.ones[7]
-		print('SEC flags: ',r.flagReg)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==cliC):
-		print('cli')
-		r.flagReg[5] = r.zeros[7]
-		print('CLI flags: ',r.flagReg)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==seiC):
-		print('sei')
-		r.flagReg[5] = r.ones[7]
-		print('SEI flags: ',r.flagReg)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==tyaC):
-		print('tya')
-		r.acc = r.regY
-		print('TYA r.acc: ',r.acc)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
-	elif(opc1==clvC):
-		print('clv')
-		r.flagReg[1] = r.zeros[7]
-		print('CLV flags: ',r.flagReg)
-		incPC()
-		r.stepCounter = bitarray('0000',endian='big')
+	LUT = [ ( bitarray('1110 1010', endian='big') , e.nop ) , ( bitarray('1110 1010', endian='big') , e.dex ),
+			( bitarray('1011 1010', endian='big') , e.tsx ) , ( bitarray('1110 1010', endian='big') , e.tax ),
+			( bitarray('1001 1010', endian='big') , e.txs ) , ( bitarray('1000 1010', endian='big') , e.txa ),
+			( bitarray('1011 1000', endian='big') , e.clv ) , ( bitarray('1001 1000', endian='big') , e.tya ),
+
+			( bitarray('0111 1000', endian='big') , e.sei ) , ( bitarray('0101 1000', endian='big') , e.cli ),
+			( bitarray('0011 1000', endian='big') , e.sec ) , ( bitarray('0001 1000', endian='big') , e.clc ),
+			( bitarray('1110 1000', endian='big') , e.inx ) , ( bitarray('1100 1000', endian='big') , e.iny ),
+			( bitarray('1010 1000', endian='big') , e.tay ) , ( bitarray('1000 1000', endian='big') , e.dey ) ]
+'''	elif(opc1==bitarray('1000 1000', endian='big')):
+		e.dey()
+	elif(opc1==bitarray('1010 1000', endian='big')):
+		e.tay()
+	elif(opc1==bitarray('1100 1000', endian='big')):
+		e.iny()
+	elif(opc1==bitarray('1110 1000', endian='big')):
+		e.inx()
+	elif(opc1==bitarray('0001 1000', endian='big')):
+		e.clc()
+	elif(opc1==bitarray('0011 1000', endian='big')):
+		e.sec()
+	elif(opc1==bitarray('0101 1000', endian='big')):
+		e.cli()
+	elif(opc1==bitarray('0111 1000', endian='big')):
+		e.sei()
+
+	elif(opc1==bitarray('1001 1000', endian='big')):
+		e.tya()
+	elif(opc1==bitarray('1011 1000', endian='big')):
+		e.clv()
 	elif(opc1==bitarray('1000 1010', endian='big')):   #no CLD/SED cuz no decimal mode
 		e.txa()
 	elif(opc1==bitarray('1001 1010', endian='big')):
@@ -923,6 +943,8 @@ def parseOPC():
 		e.dex()
 	elif(opc1==bitarray('1110 1010', endian='big')):
 		e.nop()
+'''
+
 
 def pressEvent(callback):
 	charBuff.append(callback.name)
