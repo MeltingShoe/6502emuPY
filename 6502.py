@@ -68,7 +68,7 @@ class registers:
 		self.zeros = zeros
 		self.stepCounter = stepCounter
 		self.instructReg = instructReg
-	def updateEA():
+	def updateEA(self):
 		self.eA[1:] = self.PC
 
 		self.eA[1] = self.eA[4]
@@ -108,33 +108,117 @@ class execute():
 		global r
 
 	def bpl(self):
-		pass
+		if(flagReg[0]==zeros[1]):
+			incPC()
+			data = memMap()
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			r.PC[8:] = sumReg
+			r.PC[:8] = sumReg1
+			r.updateEA()
 	def bmi(self):
-		pass
+		if(flagReg[0]==ones[1]):
+			incPC()
+			data = memMap()
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			r.PC[8:] = sumReg
+			r.PC[:8] = sumReg1
+			r.updateEA()
 	def bvc(self):
-		pass
+		if(flagReg[1]==zeros[1]):
+			incPC()
+			data = memMap()
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			r.PC[8:] = sumReg
+			r.PC[:8] = sumReg1
+			r.updateEA()
 	def bvs(self):
-		pass
+		if(flagReg[1]==ones[1]):
+			incPC()
+			data = memMap()
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			r.PC[8:] = sumReg
+			r.PC[:8] = sumReg1
+			r.updateEA()
 	def bcc(self):
-		pass
+		if(flagReg[7]==zeros[7]):
+			incPC()
+			data = memMap()
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			r.PC[8:] = sumReg
+			r.PC[:8] = sumReg1
+			r.updateEA()
 	def bcs(self):
-		pass
+		if(flagReg[7]==ones[7]):
+			incPC()
+			data = memMap()
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			r.PC[8:] = sumReg
+			r.PC[:8] = sumReg1
+			r.updateEA()
 	def bne(self):
-		pass
+		if(flagReg[6]==zeros[6]):
+			incPC()
+			data = memMap()
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			r.PC[8:] = sumReg
+			r.PC[:8] = sumReg1
+			r.updateEA()
 	def beq(self):
-		pass
+		if(flagReg[6]==ones[6]):
+			incPC()
+			data = memMap()
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			r.PC[8:] = sumReg
+			r.PC[:8] = sumReg1
+			r.updateEA()
 	def brk(self):
 		pass
-	def jsrAbsolute(self):
-		pass
+	def jsrAbsolute(self):   #THIS ISNT FINISHED IT DOESNT PUT ANYTHING ONTO STACK
+		incPC()
+		highPart = memMap()
+		incPC()
+		lowPart = memMap()
+		incPC()
+		stack[r.stackPoint:r.stackPoint+16] = r.PC
+		r.stackPoint += 16
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
+		r.updateEA()
 	def rti(self):
 		pass
 	def rts(self):
-		pass
+		r.stackPoint -= 16
+		r.PC = stack[r.stackPoint:r.stackPoint+16]
+		r.updateEA()
 	def php(self):
-		pass
+		tpc = r.PC
+		r.PC=stackPoint
+		r.updateEA()
+		first = r.eA[1:17]
+		incPC()
+		last = r.eA[1:17]
+		stack[ba2int(first),ba2int(last)] = r.flagReg
+		r.PC = tpc
+		incPC()
 	def plp(self):
-		pass
+		tpc = r.PC
+		r.PC=stackPoint
+		r.updateEA()
+		first = r.eA[1:17]
+		incPC()
+		last = r.eA[1:17]
+		data = stack[ba2int(first),ba2int(last)]
+		r.flagReg = data
+		r.PC = tpc
+		incPC()
 	def pha(self):
 		tpc = r.PC
 		r.PC=stackPoint
@@ -145,7 +229,6 @@ class execute():
 		stack[ba2int(first),ba2int(last)] = r.acc
 		r.PC = tpc
 		incPC()
-		pass
 	def pla(self):
 		tpc = r.PC
 		r.PC=stackPoint
@@ -159,7 +242,7 @@ class execute():
 		incPC()
 	def dey(self):
 		print('dey')
-		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
+		r.regY, carry= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 		print('DEY data: ',r.regX)
 		incPC()
 	def tay(self):
@@ -169,12 +252,12 @@ class execute():
 		incPC()
 	def iny(self):
 		print('iny')
-		r.regY= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
+		r.regY, carry= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
 		print('INY data: ',r.regY)
 		incPC()
 	def inx(self):
 		print('inx')
-		r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
+		r.regX, carry= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
 		print('INX data: ',r.regX)
 		incPC()
 	def clc(self):
@@ -229,7 +312,7 @@ class execute():
 		incPC()
 	def dex(self):
 		print('dex')
-		r.regX= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
+		r.regX, carry= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 		print('DEX data: ',r.regX)
 		incPC()
 	def nop(self):
@@ -241,9 +324,24 @@ class execute():
 		data = memMap()
 		print('r.acc, data',r.acc,data)
 	def jmp(self):
-		pass
+		incPC()
+		lowPart = memMap()
+		incPC()
+		highPart = memMap()
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
+		r.updateEA()
+		highPart = memMap()
+		incPC()
+		lowPart = memMap()
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
 	def jmpAbsolute(self):
-		pass
+		highPart = memMap()
+		incPC()
+		lowPart = memMap()
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
 	def sty(self):
 		print('sty')
 		print('effective address: ',r.eA)
@@ -428,7 +526,7 @@ class execute():
 		print('effective address: ',r.eA)
 		data = memMap()
 		print('data',data)
-		data megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
+		data, carry = megaAdder(cIn=r.zeros[7],carry=False,overflow=False,rA=data, rB=ones[0], sub=True)
 		memMap(write=True,data=data)
 		incPC()
 	def inc(self):
@@ -436,7 +534,7 @@ class execute():
 		print('effective address: ',r.eA)
 		data = memMap()
 		print('data',data)
-		data = megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
+		data, carry = megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 		memMap(write=True,data=data)
 		incPC()
 e = execute()
@@ -471,8 +569,8 @@ def inc8bits(count):
 	aaa = bitarray('0000',endian='big')
 	bbb = bitarray('0000',endian='big')
 	ooo = bitarray('0000 0000',endian='big')
-	aaa = r.PC[:4]
-	bbb = r.PC[4:]
+	aaa = count[:4]
+	bbb = count[4:]
 	carryOut, bbb = inc4bits(bbb)
 	if(carryOut):
 		carryOut, aaa = inc4bits(ccc)
@@ -740,23 +838,71 @@ def search(instruction):
 
 class doAddressMode:
 	def zeroPageX(self):
-		pass
-	def zeroPage(self):
-		pass
+		r.eA[0] = r.zeros[0]
+		incPC()
+		data = memMap()
+		r.eA[1:9] = r.zeros
+		data, carry = megaAdder(cIn=0,carry=0,overflow=0,neg=0,zero=0,rA=data,rB=regX)
+		r.eA[9:] = data
+		r.updateEA()
+	def zeroPage(self):	
+		r.eA[0] = r.zeros[0]
+		incPC()
+		data = memMap()
+		r.eA[1:9] = r.zeros
+		r.eA[9:] = data
+		r.updateEA()
 	def absoluteX(self):
-		print('SUSSY ADDY MODE LIT')
+		incPC()
+		highPart = memMap()
+		incPC()
+		lowPart = memMap()
+		temp = r.PC
+		lowPart, carry = megaAdder(cIn=0,carry=0,overflow=0,neg=0,zero=0,rA=lowPart,rB=regX)
+		highPart, carry = megaAdder(cIn=carry,carry=0,overflow=0,neg=0,zero=0,rA=highPart,rB=zeros)
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
+		r.updateEA()
+		r.PC=temp
 	def immediate(self):
-		pass
+		r.eA[0] = r.zeros[0]
+		incPC()
 	def absolute(self):
-		pass
+		incPC()
+		highPart = memMap()
+		incPC()
+		lowPart = memMap()
+		temp = r.PC
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
+		r.updateEA()
+		r.PC=temp
 	def zeroPageY(self):
-		pass
+		r.eA[0] = r.zeros[0]
+		incPC()
+		data = memMap()
+		r.eA[1:9] = r.zeros
+		data, carry = megaAdder(cIn=0,carry=0,overflow=0,neg=0,zero=0,rA=data,rB=regY)
+		r.eA[9:] = data
+		r.updateEA()
 	def zeroPageXOther(self):
-		pass
+		r.eA[0] = r.zeros[0]
+		#literally fuck this shit lmao
+		incPC()
 	def absoluteY(self):
-		pass
+		incPC()
+		highPart = memMap()
+		incPC()
+		lowPart = memMap()
+		temp = r.PC
+		lowPart, carry = megaAdder(cIn=0,carry=0,overflow=0,neg=0,zero=0,rA=lowPart,rB=regY)
+		highPart, carry = megaAdder(cIn=carry,carry=0,overflow=0,neg=0,zero=0,rA=highPart,rB=zeros)
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
+		r.updateEA()
+		r.PC=temp
 	def accumulator(self):
-		pass
+		r.eA[0] = r.ones[0]
 dam = doAddressMode()
 def getAddr(instruction):
 	found = search(instruction)
