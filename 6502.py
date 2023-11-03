@@ -282,9 +282,23 @@ class execute():
 		print('CPX flags: ',r.flagReg)
 		incPC()
 	def ora(self):
-		pass
+		print('ora')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('acc, data',r.acc,data)
+		r.acc = r.acc | data
+		print('ORA r.acc: ',r.acc)
+		megaAdder(carry=False,overflow=False,rB=r.zeros)
+		incPC()
 	def eor(self):
-		pass
+		print('eor')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('r.acc, data',r.acc,data)
+		r.acc = r.acc ^ data
+		print('EOR r.acc: ',r.acc)
+		megaAdder(carry=False,overflow=False,rB=r.zeros)
+		incPC()
 	def sta(self):
 		print('staC')
 		print('effective address: ',r.eA)
@@ -301,7 +315,14 @@ class execute():
 		print('CMP flags: ',r.flagReg)
 		incPC()
 	def andInstruct(self):
-		pass
+		print('and')
+		print('effective address: ',r.eA)
+		data = memMap()
+		print('r.acc, data',r.acc,data)
+		r.acc = r.acc & data
+		print('AND r.acc: ',r.acc)
+		megaAdder(carry=False,overflow=False,rB=r.zeros)
+		incPC()
 	def adc(self):
 		print('adc')
 		print('effective address: ',r.eA)
@@ -968,177 +989,6 @@ def cycle():
 	fetch()
 	getAddr(r.instructReg)
 
-def parseOPC():
-	global r
-	data = bitarray('0000 0000',endian='big')
-	eight = bitarray('0000 1000',endian='big')
-
-
-
-	if(addrMode==bitarray('010', endian='big')):
-		print('using immediate addr')
-		incPC()
-		print('pc',r.PC)
-		print('eA',r.eA)
-	elif(addrMode==bitarray('100', endian='big')):
-		print('using 0page + Y addr')
-		incPC()
-		print('eA: ',r.eA)
-		data = memMap()
-		r.eA[:9] = bitarray('0000 0000 0',endian='big')
-		data, carryOut = megaAdder(cIn=0,zero=False,carry=False,overflow=False,neg=False,rA=data, rB=r.regY)
-		r.eA[9:] = data
-	elif(addrMode==bitarray('110', endian='big')):
-		print('using absolute + Y addr')
-		incPC()
-		print('eA: ',r.eA)
-		temp = memMap()
-		incPC()
-		print('eA: ',r.eA)
-		data = memMap()
-		r.PC[0:8] = temp
-		r.PC[8:16] = data
-		r.PC, carryOut = megaAdder(cIn=0,zero=False,carry=False,overflow=False,neg=False,rA=r.PC[8:16], rB=r.regY)
-		r.PC, carryOut = megaAdder(cIn=carryOut,zero=False,carry=False,overflow=False,neg=False,rA=r.PC[0:8], rB=r.zeros)
-		r.eA = r.PC
-
-		r.eA[1] = r.eA[4]
-		r.eA[2] = r.eA[5]
-		r.eA[3] = r.eA[6]
-		r.eA[4] = r.eA[7]
-		r.eA[5] = r.eA[8]
-		r.eA[6] = r.eA[9]
-		r.eA[7] = r.eA[10]
-		r.eA[8] = r.eA[11]
-		r.eA[9] = r.eA[12]
-		r.eA[10] = r.eA[13]
-		r.eA[11] = r.eA[14]
-		r.eA[12] = r.eA[15]
-		r.eA[13] = r.eA[16]
-		r.eA[14] = r.zeros[0]
-		r.eA[15] = r.zeros[0]
-		r.eA[16] = r.zeros[0]
-		print('pc, ea ',r.PC,r.eA)
-	elif(addrMode==bitarray('000', endian='big')):
-		print('using 0page + X addr')
-		incPC()
-		print('r.eA: ',r.eA)
-		data = memMap()
-		r.eA[:9] = bitarray('0000 0000 0',endian='big')
-		data, carryOut = megaAdder(cIn=0,zero=False,carry=False,overflow=False,neg=False,rA=data, rB=r.regX)
-		r.eA[9:] = data
-	elif(addrMode==bitarray('111', endian='big')):
-		print('using absolute + X addr')
-		incPC()
-		print('r.eA: ',r.eA)
-		temp = memMap()
-		incPC()
-		print('r.eA: ',r.eA)
-		data = memMap()
-		r.PC[0:8] = temp
-		r.PC[8:16] = data
-		r.PC, carryOut = megaAdder(cIn=0,zero=False,carry=False,overflow=False,neg=False,rA=r.PC[8:16], rB=r.regX)
-		r.PC, carryOut = megaAdder(cIn=carryOut,zero=False,carry=False,overflow=False,neg=False,rA=r.PC[0:8], rB=r.zeros)
-		r.eA = r.PC
-
-		r.eA[1] = r.eA[4]
-		r.eA[2] = r.eA[5]
-		r.eA[3] = r.eA[6]
-		r.eA[4] = r.eA[7]
-		r.eA[5] = r.eA[8]
-		r.eA[6] = r.eA[9]
-		r.eA[7] = r.eA[10]
-		r.eA[8] = r.eA[11]
-		r.eA[9] = r.eA[12]
-		r.eA[10] = r.eA[13]
-		r.eA[11] = r.eA[14]
-		r.eA[12] = r.eA[15]
-		r.eA[13] = r.eA[16]
-		r.eA[14] = r.zeros[0]
-		r.eA[15] = r.zeros[0]
-		r.eA[16] = r.zeros[0]
-		print('pc, ea ',r.PC,r.eA)
-	elif(addrMode==bitarray('001', endian='big')):
-		print('using 0page addr')
-		incPC()
-		print('r.eA: ',r.eA)
-		data = memMap()
-		r.eA[:9] = bitarray('0000 0000 0',endian='big')
-		r.eA[9:17] = data
-		print('pc',r.PC)
-		print('ea',r.eA)
-	elif(addrMode==bitarray('010', endian='big')):
-		print('using acc addr')
-		incPC()
-		r.eA[0] = r.ones[0]
-		print('pc, ea ',r.PC,r.eA)
-	elif(addrMode==bitarray('011', endian='big')):
-		print('using absolute addr')
-		incPC()
-		print('r.eA: ',r.eA)
-		temp = memMap()
-		incPC()
-		print('r.eA: ',r.eA)
-		data = memMap()
-		r.PC[0:8] = temp
-		r.PC[8:16] = data
-		r.eA = r.PC
-
-		r.eA[1] = r.eA[4]
-		r.eA[2] = r.eA[5]
-		r.eA[3] = r.eA[6]
-		r.eA[4] = r.eA[7]
-		r.eA[5] = r.eA[8]
-		r.eA[6] = r.eA[9]
-		r.eA[7] = r.eA[10]
-		r.eA[8] = r.eA[11]
-		r.eA[9] = r.eA[12]
-		r.eA[10] = r.eA[13]
-		r.eA[11] = r.eA[14]
-		r.eA[12] = r.eA[15]
-		r.eA[13] = r.eA[16]
-		r.eA[14] = r.zeros[0]
-		r.eA[15] = r.zeros[0]
-		r.eA[16] = r.zeros[0]
-		print('pc, ea ',r.PC,r.eA)
-
-	# tried to use match. it did not work
-	'''if(grp == g1c):
-		print('g1')
-		if(opc==oraC):
-			print('ora')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('acc, data',r.acc,data)
-			r.acc = r.acc | data
-			print('ORA r.acc: ',r.acc)
-			megaAdder(carry=False,overflow=False,rB=r.zeros)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==andC):
-			print('and')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('r.acc, data',r.acc,data)
-			r.acc = r.acc & data
-			print('AND r.acc: ',r.acc)
-			megaAdder(carry=False,overflow=False,rB=r.zeros)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==eorC):
-			print('eor')
-			print('effective address: ',r.eA)
-			data = memMap()
-			print('r.acc, data',r.acc,data)
-			r.acc = r.acc ^ data
-			print('EOR r.acc: ',r.acc)
-			megaAdder(carry=False,overflow=False,rB=r.zeros)
-			incPC()
-			r.stepCounter = bitarray('0000',endian='big')
-		elif(opc==adcC):
-			
-
-'''
 
 
 def pressEvent(callback):
