@@ -93,13 +93,24 @@ r = registers(PC,stackPoint,eA,acc,regX,regY,flagReg,ones,zeros,stepCounter,inst
 
 zeroPage = bitarray(2048)
 stack = bitarray(2048)
+IO = bitarray(2048)
 vectors = bitarray(48)
 rom = bitarray(32768)
 ram = bitarray(28624)
 
-prog = bitarray('1010 1010 0000 1111 1100 1010 0000 1111 0000 0000')
+#LDY immediate  1010 0000
+#1010 0101      1010 0101
+#STY Y->64 		1000 0100
+#64             0100 0000
+#INC z64        1110 0110
+#64             0100 0000
+#STY Y->64 		1000 0100
+#64             0100 0000
+#JMP to inc     0110 1100
+
+prog = bitarray('1010 0000 1010 0101 1000 0100 0100 0000 1110 0110 0100 0000 1000 0100 0100 0000 0110 1100 0000 0000 0000 0100',endian='big')
 i1 = 0
-while(i1<40):
+while(i1<72):
 	zeroPage[i1] = prog[i1]
 	i1+=1
 
@@ -241,88 +252,88 @@ class execute():
 		r.PC = tpc
 		incPC()
 	def dey(self):
-		print('dey')
+		#print('dey')
 		r.regY, carry= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
-		print('DEY data: ',r.regX)
+		#print('DEY data: ',r.regX)
 		incPC()
 	def tay(self):
-		print('tay')
+		#print('tay')
 		r.regY = r.acc
-		print('TAY r.regY: ',r.regY)
+		#print('TAY r.regY: ',r.regY)
 		incPC()
 	def iny(self):
-		print('iny')
+		#print('iny')
 		r.regY, carry= megaAdder(cIn=r.zeros[7],rA=r.regY, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
-		print('INY data: ',r.regY)
+		#print('INY data: ',r.regY)
 		incPC()
 	def inx(self):
-		print('inx')
+		#print('inx')
 		r.regX, carry= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False)
-		print('INX data: ',r.regX)
+		#print('INX data: ',r.regX)
 		incPC()
 	def clc(self):
-		print('clc')
+		#print('clc')
 		r.flagReg[7] = r.zeros[7]
-		print('CLC flags: ',r.flagReg)
+		#print('CLC flags: ',r.flagReg)
 		incPC()
 	def sec(self):
-		print('sec')
+		#print('sec')
 		r.flagReg[7] = r.ones[7]
-		print('SEC flags: ',r.flagReg)
+		#print('SEC flags: ',r.flagReg)
 		incPC()
 	def cli(self):
-		print('cli')
+		#print('cli')
 		r.flagReg[5] = r.zeros[7]
-		print('CLI flags: ',r.flagReg)
+		#print('CLI flags: ',r.flagReg)
 		incPC()
 	def sei(self):
-		print('sei')
+		#print('sei')
 		r.flagReg[5] = r.ones[7]
-		print('SEI flags: ',r.flagReg)
+		#print('SEI flags: ',r.flagReg)
 		incPC()
 	def tya(self):
-		print('tya')
+		#print('tya')
 		r.acc = r.regY
-		print('TYA r.acc: ',r.acc)
+		#print('TYA r.acc: ',r.acc)
 		incPC()
 	def clv(self):
-		print('clv')
+		#print('clv')
 		r.flagReg[1] = r.zeros[7]
-		print('CLV flags: ',r.flagReg)
+		#print('CLV flags: ',r.flagReg)
 		incPC()
 	def txa(self):
-		print('txa')
+		#print('txa')
 		r.acc = r.regX
-		print('TXA r.acc: ',r.acc)
+		#print('TXA r.acc: ',r.acc)
 		incPC()
 	def txs(self):
-		print('txs')
+		#print('txs')
 		r.stackPoint = r.regX
-		print('TXS stack: ',r.stackPoint)
+		#print('TXS stack: ',r.stackPoint)
 		incPC()
 	def tax(self):
-		print('tax')
+		#print('tax')
 		r.regX = r.acc
-		print('TAX r.regX: ',r.regX)
+		#print('TAX r.regX: ',r.regX)
 		incPC()
 	def tsx(self):
-		print('tsx')
+		#print('tsx')
 		r.regX = r.stackPoint
-		print('TSX r.regX: ',r.regX)
+		#print('TSX r.regX: ',r.regX)
 		incPC()
 	def dex(self):
-		print('dex')
+		#print('dex')
 		r.regX, carry= megaAdder(cIn=r.zeros[7],rA=r.regX, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
-		print('DEX data: ',r.regX)
+		#print('DEX data: ',r.regX)
 		incPC()
 	def nop(self):
-		print('nop')
+		#print('nop')
 		incPC()
 	def bit(self):
-		print('bit')
-		print('effective address: ',r.eA)
+		#print('bit')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('r.acc, data',r.acc,data)
+		#print('r.acc, data',r.acc,data)
 	def jmp(self):
 		incPC()
 		lowPart = memMap()
@@ -343,106 +354,106 @@ class execute():
 		r.PC[:8] = highPart
 		r.PC[8:] = lowPart
 	def sty(self):
-		print('sty')
-		print('effective address: ',r.eA)
+		#print('sty')
+		#print('effective address: ',r.eA)
 		memMap(write=True,data=r.regY)
-		print('STY r.regY: ',r.regY)
+		#print('STY r.regY: ',r.regY)
 		incPC()
 	def ldy(self):
-		print('ldy')
-		print('effective address: ',r.eA)
+		#print('ldy')
+		#print('effective address: ',r.eA)
 		data = memMap()
 		r.regY = data
-		print('LDY r.regY: ',r.regY)
+		#print('LDY r.regY: ',r.regY)
 		incPC()
 	def cpy(self):
-		print('cpy')
-		print('effective address: ',r.eA)
+		#print('cpy')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('y, data',r.regY,data)
+		#print('y, data',r.regY,data)
 		r.flagReg[7]=r.zeros[7]
 		megaAdder(cIn=r.flagReg[7],rA=r.regY, rB=data, overflow=False, sub=True)
-		print('CPX flags: ',r.flagReg)
+		#print('CPX flags: ',r.flagReg)
 		incPC()
 	def cpx(self):
-		print('cpx')
-		print('effective address: ',r.eA)
+		#print('cpx')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('x, data',r.regX,data)
+		#print('x, data',r.regX,data)
 		r.flagReg[7]=r.zeros[7]
 		megaAdder(cIn=r.flagReg[7],rA=r.regX, rB=data, overflow=False, sub=True)
-		print('CPX flags: ',r.flagReg)
+		#print('CPX flags: ',r.flagReg)
 		incPC()
 	def ora(self):
-		print('ora')
-		print('effective address: ',r.eA)
+		#print('ora')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('acc, data',r.acc,data)
+		#print('acc, data',r.acc,data)
 		r.acc = r.acc | data
-		print('ORA r.acc: ',r.acc)
+		#print('ORA r.acc: ',r.acc)
 		megaAdder(carry=False,overflow=False,rB=r.zeros)
 		incPC()
 	def eor(self):
-		print('eor')
-		print('effective address: ',r.eA)
+		#print('eor')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('r.acc, data',r.acc,data)
+		#print('r.acc, data',r.acc,data)
 		r.acc = r.acc ^ data
-		print('EOR r.acc: ',r.acc)
+		#print('EOR r.acc: ',r.acc)
 		megaAdder(carry=False,overflow=False,rB=r.zeros)
 		incPC()
 	def sta(self):
-		print('staC')
-		print('effective address: ',r.eA)
+		#print('staC')
+		#print('effective address: ',r.eA)
 		memMap(write=True,data=r.acc)
-		print('STA DONE')
+		#print('STA DONE')
 		incPC()
 	def cmp(self):
-		print('cmp')
-		print('effective address: ',r.eA)
+		#print('cmp')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('r.acc, data',r.acc,data)
+		#print('r.acc, data',r.acc,data)
 		r.flagReg[7]=r.zeros[7]
 		megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data, overflow=False, sub=True)
-		print('CMP flags: ',r.flagReg)
+		#print('CMP flags: ',r.flagReg)
 		incPC()
 	def andInstruct(self):
-		print('and')
-		print('effective address: ',r.eA)
+		#print('and')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('r.acc, data',r.acc,data)
+		#print('r.acc, data',r.acc,data)
 		r.acc = r.acc & data
-		print('AND r.acc: ',r.acc)
+		#print('AND r.acc: ',r.acc)
 		megaAdder(carry=False,overflow=False,rB=r.zeros)
 		incPC()
 	def adc(self):
-		print('adc')
-		print('effective address: ',r.eA)
+		#print('adc')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('r.acc, data',r.acc,data)
+		#print('r.acc, data',r.acc,data)
 		r.acc, carryOut = megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data)
-		print('ADC r.acc: ',r.acc)
+		#print('ADC r.acc: ',r.acc)
 		incPC()
 	def lda(self):
-		print('lda')
-		print('effective address: ',r.eA)
+		#print('lda')
+		#print('effective address: ',r.eA)
 		data = memMap()
 		r.acc = data
-		print('LDA r.acc: ',r.acc)
+		#print('LDA r.acc: ',r.acc)
 		incPC()
 	def sbc(self):
-		print('sbc')
-		print('effective address: ',r.eA)
+		#print('sbc')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('r.acc, data',r.acc,data)
+		#print('r.acc, data',r.acc,data)
 		r.acc, carryOut = megaAdder(cIn=r.flagReg[7],rA=r.acc, rB=data, sub=True)
-		print('SBC r.acc: ',r.acc)
+		#print('SBC r.acc: ',r.acc)
 		incPC()
 	def asl(self):
-		print('asl')
-		print('effective address: ',r.eA)
+		#print('asl')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('data',data)
+		#print('data',data)
 		r.flagReg[7]=data[0]
 		data[0]=data[1]
 		data[1]=data[2]
@@ -456,10 +467,10 @@ class execute():
 		memMap(write=True,data=data)
 		incPC()
 	def rol(self):
-		print('rol')
-		print('effective address: ',r.eA)
+		#print('rol')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('data',data)
+		#print('data',data)
 		temp = r.flagReg[7]
 		r.flagReg[7]=data[0]
 		data[0]=data[1]
@@ -474,10 +485,10 @@ class execute():
 		memMap(write=True,data=data)
 		incPC()
 	def lsr(self):
-		print('lsr')
-		print('effective address: ',r.eA)
+		#print('lsr')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('data',data)
+		#print('data',data)
 		r.flagReg[7]=data[7]
 		data[7]=data[6]
 		data[6]=data[5]
@@ -491,10 +502,10 @@ class execute():
 		memMap(write=True,data=data)
 		incPC()
 	def ror(self):
-		print('ror')
-		print('effective address: ',r.eA)
+		#print('ror')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('data',data)
+		#print('data',data)
 		temp = r.flagReg[7]
 		r.flagReg[7]=data[7]
 		data[7]=data[6]
@@ -509,31 +520,31 @@ class execute():
 		memMap(write=True,data=data)
 		incPC()
 	def stx(self):
-		print('staC')
-		print('effective address: ',r.eA)
+		#print('staC')
+		#print('effective address: ',r.eA)
 		memMap(write=True,data=r.regX)
-		print('STX DONE')
+		#print('STX DONE')
 		incPC()
 	def ldx(self):
-		print('ldx')
-		print('effective address: ',r.eA)
+		#print('ldx')
+		#print('effective address: ',r.eA)
 		data = memMap()
 		r.regX = data
-		print('LDX r.acc: ',r.acc)
+		#print('LDX r.acc: ',r.acc)
 		incPC()
 	def dec(self):
-		print('dec')
-		print('effective address: ',r.eA)
+		#print('dec')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('data',data)
+		#print('data',data)
 		data, carry = megaAdder(cIn=r.zeros[7],carry=False,overflow=False,rA=data, rB=ones[0], sub=True)
 		memMap(write=True,data=data)
 		incPC()
 	def inc(self):
-		print('inc')
-		print('effective address: ',r.eA)
+		#print('inc')
+		#print('effective address: ',r.eA)
 		data = memMap()
-		print('data',data)
+		#print('data',data)
 		data, carry = megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 		memMap(write=True,data=data)
 		incPC()
@@ -644,7 +655,7 @@ def incPC():
 	r.eA[15] = r.zeros[0]
 	r.eA[16] = r.zeros[0]
 
-	print('PC: ',r.PC)
+	#print('PC: ',r.PC)
 def memMap(write=False, data=r.zeros):
 	if(r.eA[0] == r.ones[0] and write==False):
 		return r.acc
@@ -652,61 +663,61 @@ def memMap(write=False, data=r.zeros):
 		r.acc = data
 	mapLen = 0
 	eAddy = r.eA[1:17]
-	print('memmap eA: ',r.eA)
+	#print('memmap eA: ',r.eA)
 	address = eAddy.tobytes()
 	address = int.from_bytes(address, "big")
-	print('addy: ',address)
+	#print('addy: ',address)
 	addressStart = address
-	print('aStart: ',addressStart)
+	#print('aStart: ',addressStart)
 	endAddress = address + 8
-	print('endAddress: ', endAddress)
+	#print('endAddress: ', endAddress)
 	if(address<2048):
 		if(write != True):	
 			data = zeroPage[addressStart:endAddress]
-			print('0 page data: ',data)
+			#print('0 page data: ',data)
 			return data
 		zeroPage[addressStart:endAddress] = data
-		print('write 0 page: ',zeroPage[addressStart:endAddress],data)
+		#print('write 0 page: ',zeroPage[addressStart:endAddress],data)
 		return data
 	mapLen+=2048
 	if(address>=mapLen and address < (mapLen+2048)):
 		if(write != True):	
 			data = stack[(addressStart-mapLen):(endAddress-mapLen)]
-			print('stack data: ', data)
+			#print('stack data: ', data)
 			return data
 		stack[(addressStart-mapLen):(endAddress-mapLen)] = data
-		print('write stack: ',stack[(addressStart-mapLen):(endAddress-mapLen)])
+		#print('write stack: ',stack[(addressStart-mapLen):(endAddress-mapLen)])
 		return data
 	mapLen+=2048
 	if(address>=mapLen and address < (mapLen+28624)):
 		if(write != True):	
 			data = ram[(addressStart-mapLen):(endAddress-mapLen)]
-			print('ram data: ', data)
+			#print('ram data: ', data)
 			return data
 		ram[(addressStart-mapLen):(endAddress-mapLen)] = data
-		print('write ram: ',ram[(addressStart-mapLen):(endAddress-mapLen)])
+		#print('write ram: ',ram[(addressStart-mapLen):(endAddress-mapLen)])
 		return data
 	mapLen+=28624
 	if(address>=mapLen and address < (mapLen+48)):
 		if(write != True):	
 			data = vectors[(addressStart-mapLen):(endAddress-mapLen)]
-			print('vectors data: ', data)
+			#print('vectors data: ', data)
 			return data
 		vectors[(addressStart-mapLen):(endAddress-mapLen)] = data
-		print('write vectors: ',vectors[(addressStart-mapLen):(endAddress-mapLen)])
+		#print('write vectors: ',vectors[(addressStart-mapLen):(endAddress-mapLen)])
 		return data
 	mapLen+=48
 	if(address>=mapLen and address < (mapLen+32768)):
 		if(write != True):	
 			data = rom[(addressStart-mapLen):(endAddress-mapLen)]
-			print('rom data: ', data)
+			#print('rom data: ', data)
 			return data
 		rom[(addressStart-mapLen):(endAddress-mapLen)] = data
-		print('write rom: ',rom[(addressStart-mapLen):(endAddress-mapLen)])
+		#print('write rom: ',rom[(addressStart-mapLen):(endAddress-mapLen)])
 		return data
 	mapLen+=32768
 	if(address>=mapLen):
-		print('out of range')
+		print('address out of range')
 def fullAdder(a,b,cIn):
 	hXor = a^b
 	hOut = a&b
@@ -720,28 +731,28 @@ def megaAdder(cIn=0, carry=True, zero=True, neg=True, overflow = True, rA = r.ac
 	if sub:
 		cIn = cIn^r.ones[0]
 		rB = rB^r.ones
-		print("ra: ",rA,cIn)
+		#print("ra: ",rA,cIn)
 	if((rA[0]^rB[0])^r.ones[0]):
-		print('set x',rA[0])
+		#print('set x',rA[0])
 		x = rA[0]
 		y = True
 
 	s, cIn = fullAdder(rA[7],rB[7],cIn)
-	print(cIn)
+	#print(cIn)
 	s1, cIn = fullAdder(rA[6],rB[6],cIn)
-	print(cIn)
+	#print(cIn)
 	s2, cIn = fullAdder(rA[5],rB[5],cIn)
-	print(cIn)
+	#print(cIn)
 	s3, cIn = fullAdder(rA[4],rB[4],cIn)
-	print(cIn)
+	#print(cIn)
 	s4, cIn = fullAdder(rA[3],rB[3],cIn)
-	print(cIn)
+	#print(cIn)
 	s5, cIn = fullAdder(rA[2],rB[2],cIn)
-	print(cIn)
+	#print(cIn)
 	s6, cIn = fullAdder(rA[1],rB[1],cIn)
-	print(cIn)
+	#print(cIn)
 	s7, cOut = fullAdder(rA[0],rB[0],cIn)
-	print(cOut)
+	#print(cOut)
 	if(overflow):
 		if(s7 != x and y):
 			r.flagReg[1] = r.ones[1]
@@ -760,13 +771,13 @@ def megaAdder(cIn=0, carry=True, zero=True, neg=True, overflow = True, rA = r.ac
 	if(s7):
 		r.flagReg[0] = s7
 	zF = (s|s1|s2|s3|s4|s5|s6|s7) ^ r.ones[1]
-	print('zF: ',(zF))
+	#print('zF: ',(zF))
 	r.flagReg[6] = (zF)
 	return sumReg, cOut
 def fetch():
 	global r
-	print('fetchdatshi')
-	print(r.eA,'\n')
+	#print('fetchdatshi')
+	#print(r.eA,'\n')
 	data = memMap()
 	r.instructReg = data
 
@@ -812,7 +823,7 @@ def search(instruction):
 	k=bitarray('0000 0000', endian='big')
 	k[:2] = instruction[6:]
 	k[2:] = instruction[:6]
-	print("KKKKKKKKKKKKKK",k)
+	#print("KKKKKKKKKKKKKK",k)
 
 	low = 0
 	high = len(LUT)-1
@@ -820,20 +831,20 @@ def search(instruction):
 	while(low<=high):
 		key = LUT[mid]
 		key = key[0]
-		print('hopehope',LUT[mid])
+		#print('hopehope',LUT[mid])
 		if(k == key):
 			
 			return(LUT[mid])
 		if(k < key):
-			print(k,' IS LESS THAN ',key)
+			#print(k,' IS LESS THAN ',key)
 			high = mid - 1
 			mid = ( high + low ) // 2
 		if(k > key):
-			print(k, ' IS MORE THAN ', key)
+			#print(k, ' IS MORE THAN ', key)
 			low = mid + 1
 			mid = ( high + low ) // 2
 	key = LUT[mid+1]
-	print('no find', key)
+	#print('no find', key)
 	return(key)
 
 class doAddressMode:
@@ -959,21 +970,21 @@ def cycle():
 	global r
 	fetch()
 	getAddr(r.instructReg)
+	#print("ACC: ",r.acc)
 
 
 
 def pressEvent(callback):
 	charBuff.append(callback.name)
 def quitProg():
-	print('tryna quit...')
+	#print('tryna quit...')
 	keyboard.unhook_all()
 	os._exit(1)
-ins1 = bitarray('1110 1010', endian='big')
-foundins = getAddr(ins1)
-print('DIS DA INSTRUCTION',foundins)
-print('ACC: ',r.acc)
 
-print('mem: ',memMap())
+
+while True:
+	cycle()
+	print(acc)
 
 keyboard.on_press(pressEvent)
 keyboard.add_hotkey('ctrl+z', quitProg)
