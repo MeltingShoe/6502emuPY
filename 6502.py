@@ -98,22 +98,36 @@ vectors = bitarray(48)
 rom = bitarray(32768)
 ram = bitarray(28624)
 
-#LDY immediate  1010 0000
-#1010 0101      1010 0101
-#STY Y->64 		1000 0100
-#64             0100 0000
-#INC z64        1110 0110
-#64             0100 0000
-#STY Y->64 		1000 0100
-#64             0100 0000
-#JMP to inc     0110 1100
+524288
+class memory:
+	global r
+	def __init__(self):
+		self.memoryBlock = bitarray.zeros(524288,endian='big')
+	def readFromAddress(self, address):
+		return(memoryBlock[address*8:(address+1)*8])
+	def writeToAddress(self, address, data):
+		if(address<32768):
+			memoryBlock[address*8:(address+1)*8] = data
+			return True
+		else:
+			return False
+	def writeToROM(self, address, data):    #This is more for the backend, gives full control where the other one doesn't let you write here
+		memoryBlock[address*8:(address+1)*8] = data
+		return True
 
-prog = bitarray('1010 0000 1010 0101 1000 0100 0100 0000 1110 0110 0100 0000 1000 0100 0100 0000 0110 1100 0000 0000 0000 0100',endian='big')
+prog = bitarray('1010 1001 1111 0000 0110 1001 0000 0001 0110 1100 0000 0000',endian='big')
 i1 = 0
-while(i1<72):
+while(i1<len(prog)):
 	zeroPage[i1] = prog[i1]
 	i1+=1
 
+# READOUT OF PROGRAM
+i2 = 0
+print('PROGRAM:')
+while(i2<i1):
+	print(i2,": ",zeroPage[i2:i2+8])
+	i2+=8
+print('PROGRAM COMPLETE, STARTING...')
 class execute():
 	def __init__(self):
 		global r
@@ -122,8 +136,8 @@ class execute():
 		if(flagReg[0]==zeros[1]):
 			incPC()
 			data = memMap()
-			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
-			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zero=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zero=0,overflow=0,neg=0)
 			r.PC[8:] = sumReg
 			r.PC[:8] = sumReg1
 			r.updateEA()
@@ -131,8 +145,8 @@ class execute():
 		if(flagReg[0]==ones[1]):
 			incPC()
 			data = memMap()
-			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
-			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zero=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zero=0,overflow=0,neg=0)
 			r.PC[8:] = sumReg
 			r.PC[:8] = sumReg1
 			r.updateEA()
@@ -140,8 +154,8 @@ class execute():
 		if(flagReg[1]==zeros[1]):
 			incPC()
 			data = memMap()
-			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
-			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zero=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zero=0,overflow=0,neg=0)
 			r.PC[8:] = sumReg
 			r.PC[:8] = sumReg1
 			r.updateEA()
@@ -149,8 +163,8 @@ class execute():
 		if(flagReg[1]==ones[1]):
 			incPC()
 			data = memMap()
-			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
-			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zero=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zero=0,overflow=0,neg=0)
 			r.PC[8:] = sumReg
 			r.PC[:8] = sumReg1
 			r.updateEA()
@@ -158,8 +172,8 @@ class execute():
 		if(flagReg[7]==zeros[7]):
 			incPC()
 			data = memMap()
-			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
-			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zero=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zero=0,overflow=0,neg=0)
 			r.PC[8:] = sumReg
 			r.PC[:8] = sumReg1
 			r.updateEA()
@@ -167,8 +181,8 @@ class execute():
 		if(flagReg[7]==ones[7]):
 			incPC()
 			data = memMap()
-			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
-			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zero=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zero=0,overflow=0,neg=0)
 			r.PC[8:] = sumReg
 			r.PC[:8] = sumReg1
 			r.updateEA()
@@ -176,8 +190,8 @@ class execute():
 		if(flagReg[6]==zeros[6]):
 			incPC()
 			data = memMap()
-			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
-			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zero=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zero=0,overflow=0,neg=0)
 			r.PC[8:] = sumReg
 			r.PC[:8] = sumReg1
 			r.updateEA()
@@ -185,14 +199,14 @@ class execute():
 		if(flagReg[6]==ones[6]):
 			incPC()
 			data = memMap()
-			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zeros=0,overflow=0,neg=0)
-			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zeros=0,overflow=0,neg=0)
+			sumReg, c3 = megaAdder(cIn=0, rA = PC[8:], rB = data, carry=0,zero=0,overflow=0,neg=0)
+			sumReg1, c3 = megaAdder(cIn=c3, rA = PC[:8], rB = zeros, carry=0,zero=0,overflow=0,neg=0)
 			r.PC[8:] = sumReg
 			r.PC[:8] = sumReg1
 			r.updateEA()
 	def brk(self):
 		pass
-	def jsrAbsolute(self):   #THIS ISNT FINISHED IT DOESNT PUT ANYTHING ONTO STACK
+	def jsrAbsolute(self):
 		incPC()
 		highPart = memMap()
 		incPC()
@@ -347,6 +361,7 @@ class execute():
 		lowPart = memMap()
 		r.PC[:8] = highPart
 		r.PC[8:] = lowPart
+		r.updateEA()
 	def jmpAbsolute(self):
 		highPart = memMap()
 		incPC()
@@ -435,12 +450,15 @@ class execute():
 		#print('ADC r.acc: ',r.acc)
 		incPC()
 	def lda(self):
-		#print('lda')
+		print('lda')
+		print('PC: ',r.PC)
 		#print('effective address: ',r.eA)
 		data = memMap()
+		print('data: ',data)
 		r.acc = data
-		#print('LDA r.acc: ',r.acc)
+		print('LDA r.acc: ',data)
 		incPC()
+
 	def sbc(self):
 		#print('sbc')
 		#print('effective address: ',r.eA)
@@ -596,6 +614,7 @@ def inc8bits(count):
 	return ooo
 def incPC():
 	global r
+	print('INC PC PRE: ', PC)
 	aaa = bitarray('0000',endian='big')
 	bbb = bitarray('0000',endian='big')
 	ccc = bitarray('0000',endian='big')
@@ -655,8 +674,9 @@ def incPC():
 	r.eA[15] = r.zeros[0]
 	r.eA[16] = r.zeros[0]
 
-	#print('PC: ',r.PC)
+	print('PC: ',r.PC)
 def memMap(write=False, data=r.zeros):
+	print('memMap. eA= ', eA)
 	if(r.eA[0] == r.ones[0] and write==False):
 		return r.acc
 	elif(r.eA[0] == r.ones[0] and write==True):
@@ -780,9 +800,11 @@ def fetch():
 	#print(r.eA,'\n')
 	data = memMap()
 	r.instructReg = data
+	print('insReg',r.instructReg)
 
 
 def search(instruction):
+	print("search instruction",instruction)
 	#this is not the real LUT, this has the last 2 bits moved to the front and address bits swapped with 1s
 	LUT=[( bitarray('0000 0000', endian='big') , e.brk ),( bitarray('0000 0010', endian='big') , e.php ),
 		( bitarray('0000 0100', endian='big') , e.bpl ),( bitarray('0000 0110', endian='big') , e.clc ),
@@ -823,7 +845,8 @@ def search(instruction):
 	k=bitarray('0000 0000', endian='big')
 	k[:2] = instruction[6:]
 	k[2:] = instruction[:6]
-	#print("KKKKKKKKKKKKKK",k)
+
+	print('K: ',k)
 
 	low = 0
 	high = len(LUT)-1
@@ -849,6 +872,7 @@ def search(instruction):
 
 class doAddressMode:
 	def zeroPageX(self):
+		print('zeroPageX')
 		r.eA[0] = r.zeros[0]
 		incPC()
 		data = memMap()
@@ -857,6 +881,7 @@ class doAddressMode:
 		r.eA[9:] = data
 		r.updateEA()
 	def zeroPage(self):	
+		print('zeroPage')
 		r.eA[0] = r.zeros[0]
 		incPC()
 		data = memMap()
@@ -864,6 +889,7 @@ class doAddressMode:
 		r.eA[9:] = data
 		r.updateEA()
 	def absoluteX(self):
+		print('absoluteX')
 		incPC()
 		highPart = memMap()
 		incPC()
@@ -877,8 +903,9 @@ class doAddressMode:
 		r.PC=temp
 	def immediate(self):
 		r.eA[0] = r.zeros[0]
-		incPC()
+		print('immediate')
 	def absolute(self):
+		print('absolute')
 		incPC()
 		highPart = memMap()
 		incPC()
@@ -889,6 +916,7 @@ class doAddressMode:
 		r.updateEA()
 		r.PC=temp
 	def zeroPageY(self):
+		print('zeroPageY')
 		r.eA[0] = r.zeros[0]
 		incPC()
 		data = memMap()
@@ -897,10 +925,12 @@ class doAddressMode:
 		r.eA[9:] = data
 		r.updateEA()
 	def zeroPageXOther(self):
+		print('weirdmode')
 		r.eA[0] = r.zeros[0]
 		#literally fuck this shit lmao
 		incPC()
 	def absoluteY(self):
+		print('absoluteY')
 		incPC()
 		highPart = memMap()
 		incPC()
@@ -913,14 +943,18 @@ class doAddressMode:
 		r.updateEA()
 		r.PC=temp
 	def accumulator(self):
+		print('accumulator mode')
 		r.eA[0] = r.ones[0]
 dam = doAddressMode()
 def getAddr(instruction):
 	found = search(instruction)
+	print('found',found)
 	foundIns = found[0]
 	addrM = foundIns[5:]
 	grp = foundIns[:2]
 	if(addrM==bitarray('111',endian='big')):
+		addrM = instruction[3:6]
+		print("group: ",grp, ' addrM: ',addrM,' found: ',found)
 		if(grp == bitarray('01',endian='big')):
 			if(addrM==bitarray('000',endian='big')):
 				dam.zeroPageX()
@@ -968,11 +1002,10 @@ def getAddr(instruction):
 
 def cycle():
 	global r
+	print('CYCLE')
 	fetch()
 	getAddr(r.instructReg)
 	#print("ACC: ",r.acc)
-
-
 
 def pressEvent(callback):
 	charBuff.append(callback.name)
@@ -981,10 +1014,15 @@ def quitProg():
 	keyboard.unhook_all()
 	os._exit(1)
 
-
-while True:
+fetch()
+incPC()
+getAddr(r.instructReg)
+i2=0
+while i2<10:
+	i2+=1
 	cycle()
-	print(acc)
+	print("eA: ",eA)
+	print("acc: ",r.acc)
 
 keyboard.on_press(pressEvent)
 keyboard.add_hotkey('ctrl+z', quitProg)
