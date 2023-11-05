@@ -168,6 +168,84 @@ class _memory:
 		self.irqVector = bitarray('0000 1100 0000 0000',endian='big')
 		self.accMode = False
 		self.addIndex = 0
+	def readAddress(self, inAddress):
+		start = inAddress * 8
+		stop = (inAddress + 1) * 8
+		if(accMode):
+			return r.acc
+		return self.memoryBlock[start:stop]
+	def getAddressOffset(self, inAddress, addressMode):
+		out = addressMode(inAddress)
+		return out
+	
+
+	def zeroPageX(self, inAddress):
+		self.accMode = False
+		print('Run zeroPageX')
+		return(ba2int(r.zeros + r.regX))
+	def zeroPage(self, inAddress):	
+		self.accMode = False
+		print('Run zeroPage')
+		l = self.readAddress(inAddress)
+		return r.zeros+l
+	def absoluteX(self, inAddress):
+		self.accMode = False
+		print('Run absoluteX')
+		h = self.readAddress(inAddress)
+		l = self.readAddress(inAddress+1)
+		index = ba2int(h+l)
+		index = index + ba2int(r.regX)
+		return(index)
+	def immediate(self, inAddress):
+		self.accMode = False
+		print('Run immediate')
+		return(inAddress+1)
+		
+	def absolute(self, inAddress):
+		self.accMode = False
+		print('Run absolute')
+		h = self.readAddress(inAddress)
+		l = self.readAddress(inAddress+1)
+		return h+l
+		
+	def zeroPageY(self, inAddress):
+		self.accMode = False
+		print('Run zeroPageY')
+		return(ba2int(r.zeros + r.regY))
+	def indirectX(self, inAddress):
+		self.accMode = False
+		print('Run indirectX')
+		r.incPC()
+		data = mem.read()
+		mem.setAddressHigh(r.zeros)
+		mem.setAddressLow(data)
+		high = mem.read()
+		data = ALU.incVal(data)
+		mem.setAddressLow(data)
+		low = mem.read()
+		mem.setAddressHigh(high)
+		mem.setAddressLow(low)
+	def absoluteY(self, inAddress):
+		self.accMode = False
+		print('Run absoluteY')
+		h = self.readAddress(inAddress)
+		l = self.readAddress(inAddress+1)
+		index = ba2int(h+l)
+		index = index + ba2int(r.regY)
+		return(index)
+	def accumulator(self, inAddress):
+		print('Run accumulator')
+		self.accMode = True
+		return self.accMode
+	def relative(self, inAddress):
+		self.accMode = False
+		print('Run relative')
+		r.incPC()
+	def implied(self, inAddress):
+		self.accMode = False
+		print('Run implied')
+		return(inAddress)
+
 	def updateAddress(self):
 		self.address = r.PC
 	def updateEA(self):
@@ -715,6 +793,7 @@ class _execute:
 		ALU.add(data)
 	def lda(self):          #DONE
 		print('Run LDA')
+		print('LLDAPC:',r.PC)
 		data = mem.read()
 		r.acc = data
 		print('acc: ',r.acc)
@@ -787,7 +866,7 @@ class _decode:
 		( bitarray('0110 1000', endian='big'), False, e.pla ),
 		( bitarray('0111 0000', endian='big'), True, e.bvs ),
 		( bitarray('0111 1000', endian='big'), False, e.sei ),
-		( bitarray('0111 1100', endian='big'), True, e.jmpAbsolute ),
+		( bitarray('0111 1100', endian='big'), False, e.jmpAbsolute ),
 
 		( bitarray('1000 1000', endian='big'), False, e.dey ),
 		( bitarray('1001 0000', endian='big'), True, e.bcc ),
@@ -831,26 +910,26 @@ class _decode:
 		( bitarray('1110 1010', endian='big'), False, e.nop )]
 		self.addressModeLUT = [ 
 
-	                   (bitarray('00 000', endian='big') , AM.immediate),
-	                   (bitarray('00 001', endian='big') , AM.zeroPage),
-	                   (bitarray('00 011', endian='big') , AM.absolute),
-	                   (bitarray('00 100', endian='big') , AM.relative),
-	                   (bitarray('00 101', endian='big') , AM.indirectX),
-	                   (bitarray('00 111', endian='big') , AM.absoluteX),
-	                   (bitarray('01 000', endian='big') , AM.zeroPageX), 
-	                   (bitarray('01 001', endian='big') , AM.zeroPage),  
-	                   (bitarray('01 010', endian='big') , AM.immediate), 
-	                   (bitarray('01 011', endian='big') , AM.absolute),  
-	                   (bitarray('01 100', endian='big') , AM.zeroPageY), 
-	                   (bitarray('01 101', endian='big') , AM.indirectX), 
-	                   (bitarray('01 110', endian='big') , AM.absoluteY), 
-	                   (bitarray('01 111', endian='big') , AM.absoluteX), 
-	                   (bitarray('10 000', endian='big') , AM.immediate),
-	                   (bitarray('10 001', endian='big') , AM.zeroPage),
-	                   (bitarray('10 010', endian='big') , AM.accumulator),
-	                   (bitarray('10 011', endian='big') , AM.absolute),
-	                   (bitarray('10 101', endian='big') , AM.indirectX),
-	                   (bitarray('10 111', endian='big') , AM.absoluteX),]
+	                   (bitarray('00 000', endian='big') , mem.immediate),
+	                   (bitarray('00 001', endian='big') , mem.zeroPage),
+	                   (bitarray('00 011', endian='big') , mem.absolute),
+	                   (bitarray('00 100', endian='big') , mem.relative),
+	                   (bitarray('00 101', endian='big') , mem.indirectX),
+	                   (bitarray('00 111', endian='big') , mem.absoluteX),
+	                   (bitarray('01 000', endian='big') , mem.zeroPageX), 
+	                   (bitarray('01 001', endian='big') , mem.zeroPage),  
+	                   (bitarray('01 010', endian='big') , mem.immediate), 
+	                   (bitarray('01 011', endian='big') , mem.absolute),  
+	                   (bitarray('01 100', endian='big') , mem.zeroPageY), 
+	                   (bitarray('01 101', endian='big') , mem.indirectX), 
+	                   (bitarray('01 110', endian='big') , mem.absoluteY), 
+	                   (bitarray('01 111', endian='big') , mem.absoluteX), 
+	                   (bitarray('10 000', endian='big') , mem.immediate),
+	                   (bitarray('10 001', endian='big') , mem.zeroPage),
+	                   (bitarray('10 010', endian='big') , mem.accumulator),
+	                   (bitarray('10 011', endian='big') , mem.absolute),
+	                   (bitarray('10 101', endian='big') , mem.indirectX),
+	                   (bitarray('10 111', endian='big') , mem.absoluteX),]
 		self.instruction = bitarray('0000 0000',endian='big')
 
 	def setInstruction(self, instruction):
@@ -861,9 +940,9 @@ class _decode:
 			decodedAddressMode = self.getAddressMode()
 			if(decodedAddressMode == False):
 				print('COULDNT FIND ADDRESS MODE, DEFAULTING TO IMPLIED')
-				decodedAddressMode = AM.implied
+				decodedAddressMode = mem.implied
 		else:
-			decodedAddressMode = AM.implied
+			decodedAddressMode = mem.implied
 		return decodedAddressMode, decodedInstruction[2]
 	def parseInstruction(self, instruction):
 		self.setInstruction(instruction)
@@ -935,12 +1014,12 @@ class _cycle:
 	global l
 
 	def cycle(self):
+		r.restorePC()
+		print('acc: ',r.acc, r.PC)
 		r.setInstructionReg()
 		decodedAddressMode, decodedInstruction = decode.parseInstructionReg()
 		decodedAddressMode()
 		decodedInstruction()
-		r.restorePC()
-		print('acc: ',r.acc)
 	def reset(self):
 		print('RESETTING')
 		r.PC = bitarray('0000 0000 0000 0000',endian='big')
@@ -960,8 +1039,6 @@ class _cycle:
 		decodedInstruction()
 
 
-
-
 r = _registers()
 mem = _memory()
 ALU = _ALU()
@@ -969,7 +1046,6 @@ e = _execute()
 AM = _runAddressModes()
 decode = _decode()
 cpu = _cycle()
-
 
 
 charBuff = []
@@ -981,7 +1057,7 @@ def quitProg():
 	os._exit(1)
 
 prog = bitarray('1010 0101 0000 1000 0110 0101 0000 1000 0100 1100 0000 0000 0000 0000 0000 0000 0000 0010',endian='big')
-prog1 = bitarray('1010 0101 0000 1000 0110 0101 0000 1000 0111 1100 0000 0000 0000 0000 0000 0001',endian='big')
+prog1 = bitarray('1010 0101 0000 1000 0110 0101 0000 1000 0111 1100 0000 0000 0000 0010 0000 0000 0000 0001',endian='big')
 i=0
 while i < len(prog1):
 	mem.memoryBlock[i] = prog1[i]
