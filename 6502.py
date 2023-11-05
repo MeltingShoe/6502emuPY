@@ -40,9 +40,9 @@ from bitarray.util import int2ba
 			( bitarray('001x xx01', endian='big') , e.andInstruct ) , ( bitarray('000x xx01', endian='big') , e.ora ) ]'''
 def baFromInt(integer):
 	ba = int2ba(integer,endian='big')
-	buffer = bitarray('0000 0000', endian='big')
+	buffer = bitarray('0000 0000 0000 0000', endian='big')
 	index = len(ba)
-	bi=8
+	bi=16
 	while index > 0:
 		index-=1
 		bi-=1
@@ -50,9 +50,43 @@ def baFromInt(integer):
 	return buffer
 
 
-class logger:
+class _logger:
+	global r
 	def __init__(self):
-		pass
+		self.printRegs = True
+		self.regOuts = ""
+		self.printRWData = True
+		self.printRWAddress = True
+		self.memOuts = ""
+		self.printAddressMode = True
+		self.AMOut = ""
+		self.printInstruction = True
+		self.instructOut = ""
+	def setRegOuts(self):
+		print(r.PC)
+		self.regOuts = "PC: "+str(hex(ba2int(r.PC)))+" ACC:"+str(hex(ba2int(r.acc)))+" regX:"+str(hex(ba2int(r.regX)))+" regY:"+str(hex(ba2int(r.regY)))+" Flags:"+str(hex(ba2int(r.flagReg)))+" stackPoint:"+str(hex(ba2int(r.stackPoint)))+" instruction:"+str(hex(ba2int(r.instructReg)))
+	def addMemOuts(self,data):
+		self.memOuts += data
+	def addAMOut(self,data):
+		self.AMOut += data
+	def addInstructOut(self,data):
+		self.instructOut += data
+	def output(self):
+		print("===========================================================")
+		print('\n')
+		self.setRegOuts()
+		print(self.regOuts)
+		print('\n')
+		print(self.memOuts)
+		print('\n')
+		print(self.instructOut)
+		self.regOuts = ""
+		self.memOuts = ""
+		self.AMOut = ""
+		self.instructOut = ""
+
+l = _logger()
+
 class _registers:
 	global mem
 	def __init__(self):
@@ -67,17 +101,26 @@ class _registers:
 		self.instructReg = bitarray('0000 0000', endian='big')
 	def setPCLow(self,inp):
 		self.PC[8:] = inp
+		print('L',self.PC)
 	def setPCHigh(self,inp):
 		self.PC[:8] = inp
+		print('H',self.PC)
 	def getPCLow(self):
 		return self.PC[8:]
 	def getPCHigh(self):
 		return self.PC[:8]
 	def incPC(self):
-		num = ba2int(self.PC)
-		num += 1
-		num = baFromInt(num)
-		self.PC = num
+		h=self.PC
+		x, c0 = ALU.incVal(self.getPCLow(),retCarry=True)
+		if(c0):
+			y = ALU.incVal(self.getPCHigh())
+		else:
+			y = self.getPCHigh()
+		print(x,self.getPCLow(),c0,y)
+		self.setPCLow(x)
+		self.setPCHigh(y)
+		mem.setAddressFromPC()
+		print('PC: ',h,' -> ',self.PC)
 	def iFlag(self, setVal = None):
 		if setVal is None:
 			return self.flagReg[5]
@@ -114,18 +157,17 @@ class _registers:
 class _memory:
 	global r
 	global ALU
+	global l
 	def __init__(self):
 		self.memoryBlock = bitarray(524288,endian='big')
-		self.addressLow = bitarray(8,endian='big')
-		self.addressHigh = bitarray(8,endian='big')
+		self.addressLow = bitarray('0000 0000',endian='big')
+		self.addressHigh = bitarray('0000 0000',endian='big')
 		self.address = self.addressHigh + self.addressLow
 		self.resetVector = bitarray('0000 0000 0000 0000',endian='big')
 		self.nmiVector = bitarray('0000 1111 0000 0000',endian='big')
 		self.irqVector = bitarray('0000 1100 0000 0000',endian='big')
 		self.accMode = False
-		self.setVectors()
 		self.addIndex = 0
-
 	def setVectors(self):
 		self.setAddressHigh(bitarray('1111 1111',endian='big'))
 		self.setAddressLow(bitarray('1111 1010',endian='big'))
@@ -140,7 +182,6 @@ class _memory:
 		self.write(self.irqVector[:8])
 		self.setAddressLow(bitarray('1111 1111',endian='big'))
 		self.write(self.irqVector[8:])
-	
 	def getResetV(self):
 		self.setAddressHigh(bitarray('1111 1111',endian='big'))
 		self.setAddressLow(bitarray('1111 1100',endian='big'))
@@ -174,109 +215,126 @@ class _memory:
 		self.address = self.addressHigh + self.addressLow
 		return self.address
 	def getEffectiveAddress(self):
-		self.address = self.addressHigh + self.addressLow
-		addy = ba2int(self.address)
-		self.addIndex = addy*8
+		self.address = self.getAddressHigh() + self.getAddressLow()
+		print('addy: ',self.address)
+		
+		addy = self.address
+		addy = addy << 1
+
+		print('eA: ',addy)
+		self.addIndex = ba2int(addy)
 		return self.addIndex
 	def read(self):
+		print('Reading')
+
 		if(self.accMode):
+			print('ACC: ')
+			print(str(hex(ba2int(r.acc))))
 			return r.acc
 		else:
 			self.getEffectiveAddress()
-			return(self.memoryBlock[self.addIndex:self.addIndex+8])
+			print('data' + str(hex(ba2int(self.memoryBlock[self.addIndex:8+self.addIndex]))))
+
+			return(self.memoryBlock[self.addIndex:8+self.addIndex])
 	def write(self, data):
+		print('Writing')
+
 		if(self.accMode):
+			print('ACC: ')
+			print(str(hex(ba2int(r.acc))))
 			r.acc = data
 		else:
 			self.getEffectiveAddress()
-			self.memoryBlock[self.addIndex:self.addIndex+8] = data
+			self.memoryBlock[self.addIndex:8+self.addIndex] = data
+			print(str(hex(ba2int(self.memoryBlock[self.addIndex:8+self.addIndex]))))
+			print('  ')
 			return True
 	def setAddressFromPC(self):
 		self.setAddressHigh(r.PC[:8])
 		self.setAddressLow(r.PC[8:])
 class _runAddressModes:
-	def __init__(self,memory):
-		self.m = memory
+	global mem
+	global l
 	def zeroPageX(self):
-		self.m.accMode = False
-		print('zeroPageX')
-		self.m.setAddressHigh(r.zeros)
-		self.m.setAddressLow(r.regX)
+		mem.accMode = False
+		print('Run zeroPageX')
+		mem.setAddressHigh(r.zeros)
+		mem.setAddressLow(r.regX)
 	def zeroPage(self):	
-		self.m.accMode = False
-		print('zeroPage')
+		mem.accMode = False
+		print('Run zeroPage')
 		r.incPC()
-		self.m.setAddressFromPC()
-		lowBit = self.m.read()
-		self.m.setAddressLow(lowBit)
-		self.m.setAddressHigh(r.zeros)
+		mem.setAddressFromPC()
+		lowBit = mem.read()
+		mem.setAddressLow(lowBit)
+		mem.setAddressHigh(r.zeros)
 	def absoluteX(self):
-		self.m.accMode = False
-		print('absoluteX')
+		mem.accMode = False
+		print('Run absoluteX')
 		r.incPC()
-		self.m.setAddressFromPC()
-		highPart = self.m.read()
+		mem.setAddressFromPC()
+		highPart = mem.read()
 		r.incPC()
-		self.m.setAddressFromPC()
-		lowPart = self.m.read()
+		mem.setAddressFromPC()
+		lowPart = mem.read()
 		highPart, lowPart = ALU.addOffset(highPart,lowPart,r.regX)
-		self.m.setAddressHigh(highPart)
-		self.m.setAddressLow(lowPart)
+		mem.setAddressHigh(highPart)
+		mem.setAddressLow(lowPart)
 	def immediate(self):
-		self.m.accMode = False
-		print('immediate')
+		mem.accMode = False
+		print('Run immediate')
 		r.incPC()
-		self.m.setAddressFromPC()
+		mem.setAddressFromPC()
 	def absolute(self):
-		self.m.accMode = False
-		print('absolute')
+		mem.accMode = False
+		print('Run absolute')
 		r.incPC()
-		self.m.setAddressFromPC()
-		highPart = self.m.read()
+		mem.setAddressFromPC()
+		highPart = mem.read()
 		r.incPC()
-		self.m.setAddressFromPC()
-		lowPart = self.m.read()
-		self.m.setAddressHigh(highPart)
-		self.m.setAddressLow(lowPart)
+		mem.setAddressFromPC()
+		lowPart = mem.read()
+		mem.setAddressHigh(highPart)
+		mem.setAddressLow(lowPart)
 	def zeroPageY(self):
-		self.m.accMode = False
-		print('zeroPageY')
-		self.m.setAddressHigh(r.zeros)
-		self.m.setAddressLow(r.regY)
+		mem.accMode = False
+		print('Run zeroPageY')
+		mem.setAddressHigh(r.zeros)
+		mem.setAddressLow(r.regY)
 	def indirectX(self):
-		self.m.accMode = False
-		print('indirectX')
+		mem.accMode = False
+		print('Run indirectX')
 		r.incPC()
-		data = self.m.read()
-		self.m.setAddressHigh(r.zeros)
-		self.m.setAddressLow(data)
-		high = self.m.read()
+		data = mem.read()
+		mem.setAddressHigh(r.zeros)
+		mem.setAddressLow(data)
+		high = mem.read()
 		data = ALU.incVal(data)
-		self.m.setAddressLow(data)
-		low = self.m.read()
-		self.m.setAddressHigh(high)
-		self.m.setAddressLow(low)
+		mem.setAddressLow(data)
+		low = mem.read()
+		mem.setAddressHigh(high)
+		mem.setAddressLow(low)
 	def absoluteY(self):
-		self.m.accMode = False
-		print('absoluteY')
+		mem.accMode = False
+		print('Run absoluteY')
 		r.incPC()
-		self.m.setAddressFromPC()
-		highPart = self.m.read()
+		mem.setAddressFromPC()
+		highPart = mem.read()
 		r.incPC()
-		self.m.setAddressFromPC()
-		lowPart = self.m.read()
+		mem.setAddressFromPC()
+		lowPart = mem.read()
 		highPart, lowPart = ALU.addOffset(highPart,lowPart,r.regY)
-		self.m.setAddressHigh(highPart)
-		self.m.setAddressLow(lowPart)
+		mem.setAddressHigh(highPart)
+		mem.setAddressLow(lowPart)
 	def accumulator(self):
-		print('accumulator mode')
-		self.m.accMode = True
+		print('Run accumulator')
+		mem.accMode = True
 	def relative(self):
-		self.m.accMode = False
-		print('relative')
+		mem.accMode = False
+		print('Run relative')
 		r.incPC()
 	def implied(self):
-		print('implied')
+		print('Run implied')
 		pass
 class _ALU:
 	global r
@@ -290,8 +348,8 @@ class _ALU:
 			cOut = fOut | hOut
 			return s,cOut
 	def addOffset(self,high,low,offset):
-		sL, c = addVal(low,offset,carry=0,flags=False)
-		sH, c = addVal(high,r.zeros,carry=c,flags=False)
+		sL, c = self.addVal(low,offset,carry=0,flags=False)
+		sH, c = self.addVal(high,r.zeros,carry=c,flags=False)
 		return sH, sL
 	def addVal(self, data1, data2, carry = None, flags = True, cFlag=True, zFlag=True, nFlag=True, vFlag=True):
 		if carry is None:
@@ -352,14 +410,14 @@ class _ALU:
 	def add(self, data):
 		r.acc = self.addVal(r.acc, data)
 	def sub(self, data):
-		r.acc = subVal(r.acc, data)
+		r.acc = self.subVal(r.acc, data)
 	def incVal(self, data, retCarry = False, flags = False, cFlag=False, zFlag=False, nFlag=False, vFlag=False):
-		s, c = addVal(data, r.zeros, carry = r.ones[0], flags=flags, cFlag=cFlag, zFlag=zFlag, nFlag=nFlag, vFlag=vFlag)
+		s, c = self.addVal(data, r.zeros, carry = r.ones[0], flags=flags, cFlag=cFlag, zFlag=zFlag, nFlag=nFlag, vFlag=vFlag)
 		if(retCarry):
 			return s,c
 		return s
 	def decVal(self, data, retCarry = False, flags = False, cFlag=False, zFlag=False, nFlag=False, vFlag=False):
-		s, c = addVal(data, r.ones, carry = r.zeros[0], flags=flags, cFlag=cFlag, zFlag=zFlag, nFlag=nFlag, vFlag=vFlag)
+		s, c = self.addVal(data, r.ones, carry = r.zeros[0], flags=flags, cFlag=cFlag, zFlag=zFlag, nFlag=nFlag, vFlag=vFlag)
 		if(retCarry):
 			return s,c
 		return s
@@ -407,57 +465,69 @@ class _execute:
 	def __init__(self):
 		global r
 		global ALU
+	def rti(self):
+		print('Run RTI')
 	def bpl(self):          #DONE
+		print('Run BPL')
 		if(r.nFlag()==r.zeros[1]):
 			data = mem.read()
-			high, low = ALU.addOffset(r.getPCHigh,r.getPCLow,data)
+			high, low = ALU.addOffset(r.getPCHigh(),r.getPCLow(),data)
 			r.setPCHigh(high)
 			r.setPCLow(low)
 	def bmi(self):        #DONE
+		print('Run BMI')
 		if(r.nFlag()==r.ones[1]):
 			data = mem.read()
-			high, low = ALU.addOffset(r.getPCHigh,r.getPCLow,data)
+			high, low = ALU.addOffset(r.getPCHigh(),r.getPCLow(),data)
 			r.setPCHigh(high)
 			r.setPCLow(low)
 	def bvc(self):          #DONE
+		print('Run BVC')
 		if(r.vFlag()==r.zeros[1]):
 			data = mem.read()
-			high, low = ALU.addOffset(r.getPCHigh,r.getPCLow,data)
+			high, low = ALU.addOffset(r.getPCHigh(),r.getPCLow(),data)
 			r.setPCHigh(high)
 			r.setPCLow(low)
 	def bvs(self):        #DONE
+		print('Run BVS')
 		if(r.vFlag()==r.ones[1]):
 			data = mem.read()
 			high, low = ALU.addOffset(r.getPCHigh,r.getPCLow,data)
 			r.setPCHigh(high)
 			r.setPCLow(low)
 	def bcc(self):        #DONE
+		print('Run BCC')
 		if(r.cFlag()==r.zeros[1]):
 			data = mem.read()
 			high, low = ALU.addOffset(r.getPCHigh,r.getPCLow,data)
 			r.setPCHigh(high)
 			r.setPCLow(low)
 	def bcs(self):        #DONE
+		print('Run BCS')
 		if(r.cFlag()==r.ones[1]):
 			data = mem.read()
 			high, low = ALU.addOffset(r.getPCHigh,r.getPCLow,data)
 			r.setPCHigh(high)
 			r.setPCLow(low)
 	def bne(self):         #DONE
+		print('Run BNE')
 		if(r.zFlag()==r.zeros[1]):
 			data = mem.read()
 			high, low = ALU.addOffset(r.getPCHigh,r.getPCLow,data)
 			r.setPCHigh(high)
 			r.setPCLow(low)
 	def beq(self):          #DONE
+		print('Run BEQ')
 		if(r.zFlag()==r.ones[1]):
 			data = mem.read()
 			high, low = ALU.addOffset(r.getPCHigh,r.getPCLow,data)
 			r.setPCHigh(high)
 			r.setPCLow(low)
 	def brk(self):
+		print('Run BRK')
 		pass
 	def jsrAbsolute(self):           #DONE
+		print('Run JSR')
 		r.incPC()
 		lowBit = mem.read()
 		r.incPC()
@@ -465,15 +535,16 @@ class _execute:
 		r.incPC()
 		mem.setAddressHigh(bitarray('0000 0001',endian='big'))
 		mem.setAddressLow(r.stackPoint)
-		mem.write(r.getPCHigh)
+		mem.write(r.getPCHigh())
 		r.stackPoint = ALU.incVal(r.stackPoint)
 		mem.setAddressLow(r.stackPoint)
-		mem.write(r.getPCLow)
+		mem.write(r.getPCLow())
 		r.stackPoint = ALU.incVal(r.stackPoint)
 		r.setPCLow(lowBit)
 		r.setPCHigh(highBit)
 
 	def rts(self):                #DONE
+		print('Run RTS')
 		mem.setAddressHigh(bitarray('0000 0001',endian='big'))
 		r.stackPoint = ALU.decVal(r.stackPoint)
 		mem.setAddressLow(r.stackPoint)
@@ -485,77 +556,98 @@ class _execute:
 		r.setPCLow(lowPart)
 
 	def php(self):         #DONE
+		print('Run PHP')
 		mem.setAddressLow(r.stackPoint)
 		mem.setAddressHigh(bitarray('0000 0001',endian='big'))
 		mem.write(r.flagReg)
 		r.stackPoint = ALU.incVal(r.stackPoint)
 		r.incPC()
 	def plp(self):          #DONE
+		print('Run PLP')
 		mem.setAddressLow(r.stackPoint)
 		mem.setAddressHigh(bitarray('0000 0001',endian='big'))
 		r.flagReg = mem.read()
 		r.stackPoint = ALU.decVal(r.stackPoint)
 		r.incPC()
 	def pha(self):              #DONE
+		print('Run PHA')
 		mem.setAddressLow(r.stackPoint)
 		mem.setAddressHigh(bitarray('0000 0001',endian='big'))
 		mem.write(r.acc)
 		r.stackPoint = ALU.incVal(r.stackPoint)
 		r.incPC()
 	def pla(self):              #DONE
+		print('Run PLA')
 		mem.setAddressLow(r.stackPoint)
 		mem.setAddressHigh(bitarray('0000 0001',endian='big'))
 		r.acc = mem.read()
 		r.stackPoint = ALU.decVal(r.stackPoint)
 		r.incPC()
 	def dey(self):         #DONE
+		print('Run DEY')
 		r.regY = ALU.decVal(regY)
 		r.incPC()
 	def tay(self):                #DONE
+		print('Run TAY')
 		r.regY = r.acc
 		r.incPC()
 	def iny(self):     #DONE
+		print('Run INY')
 		r.regY = ALU.incVal(regY)
 		r.incPC()
 	def inx(self):      #DONE
+		print('Run INX')
 		r.regX = ALU.incVal(r.regX)
 		r.incPC()
 	def clc(self):          #DONE
+		print('Run CLC')
 		r.cFlag(setVal=r.zeros[0])
 		r.incPC()
 	def sec(self):         #DONE
+		print('Run SEC')
 		r.cFlag(setVal=r.ones[0])
 		r.incPC()
 	def cli(self):        	#DONE
+		print('Run CLI')
 		r.iFlag(setVal=r.zeros[0])
 		r.incPC()
 	def sei(self):          #DONE
+		print('Run SEI')
 		r.iFlag(setVal=r.ones[0])
 		r.incPC()
 	def tya(self):              #DONE
+		print('Run TYA')
 		r.acc = r.regY
 		r.incPC()
 	def clv(self):          #DONE
+		print('Run CLV')
 		r.vFlag(setVal=r.zeros[0])
 		r.incPC()
 	def txa(self):          #DONE
+		print('Run TXA')
 		r.acc = r.regX
 		r.incPC()
 	def txs(self):               #DONE
+		print('Run TXS')
 		r.stackPoint = r.regX
 		r.incPC()
 	def tax(self):               #DONE
+		print('Run TAX')
 		r.regX = r.acc
 		r.incPC()
 	def tsx(self):      #DONE
+		print('Run TSX')
 		r.regX = r.stackPoint
 		r.incPC()
 	def dex(self):          #DONE
+		print('Run DEX')
 		r.regX = ALU.decVal(r.regX)
 		r.incPC()
 	def nop(self):
+		print('Run NOP')
 		r.incPC()
 	def bit(self):       #DONE
+		print('Run BIT')
 		data = mem.read()
 		r.nFlag(setVal=data[0])
 		r.vFlag(setVal=data[1])
@@ -563,6 +655,7 @@ class _execute:
 		ALU.addVal(self, data, r.zeros, carry = r.zeros[0], flags = True, cFlag=False, zFlag=True, nFlag=False, vFlag=False)
 		r.incPC()
 	def jmp(self):                  #DONE
+		print('Run JMP')
 		r.incPC()
 		highPart = mem.read()
 		r.incPC()
@@ -576,6 +669,7 @@ class _execute:
 		r.setPCHigh(highPart)
 		r.setPCLow(lowPart)
 	def jmpAbsolute(self):                    #DONE
+		print('Run JMP abs')
 		r.incPC()
 		highPart = mem.read()
 		r.incPC()
@@ -583,78 +677,99 @@ class _execute:
 		r.setPCHigh(highPart)
 		r.setPCLow(lowPart)
 	def sty(self):              #DONE
+		print('Run STY')
 		mem.write(r.regY)
 		r.incPC()
 	def ldy(self):              #DONE
+		print('Run LDY')
 		data = mem.read()
 		r.regY = data
 		r.incPC()
 	def cpy(self):            #DONE
+		print('Run CPY')
 		data = mem.read()
 		ALU.cmpVal(data,regY)
 	def cpx(self):            #DONE
+		print('Run CPX')
 		data = mem.read()
 		ALU.cmpVal(data,regX)
 	def ora(self):            #DONE
+		print('Run ORA')
 		data = mem.read()
 		r.acc |= data
 		ALU.add(r.zeros,cFlag=False,vFlag=False)
 		r.incPC()
 	def eor(self):        #DONE
+		print('Run EOR')
 		data = mem.read()
 		r.acc ^= data
 		ALU.add(r.zeros,cFlag=False,vFlag=False)
 	def sta(self):        #DONE
+		print('Run STA')
 		mem.write(r.acc)
 		r.incPC()
 	def cmp(self):       #DONE
+		print('Run CMP')
 		data = mem.read()
 		ALU.cmpVal(data,r.acc)
 	def andInstruct(self):    #DONE
+		print('Run AND')
 		data = mem.read()
 		ALU.andAcc(data)
 	def adc(self):   #DONE
+		print('Run ADC')
 		data = mem.read()
 		r.acc, carryOut = ALU.add(data)
 	def lda(self):          #DONE
+		print('Run LDA')
 		data = mem.read()
 		r.acc = data
 		r.incPC()
+		print('PC: ',r.PC)
 	def sbc(self):              #DONE
+		print('Run SBC')
 		data = mem.read()
 		ALU.sub(data)
 		r.incPC()
 	def asl(self):     #DONE
+		print('Run ASL')
 		data = mem.read()
 		data = ALU.aslVal(data)
 		mem.write(data)
 		r.incPC()
 	def rol(self):                #DONE
+		print('Run ROL')
 		data = mem.read()
 		data = ALU.rolVal(data)
 		mem.write(data)
 		r.incPC()
 	def lsr(self):                    #DONE
+		print('Run LSR')
 		data = mem.read()
 		data = ALU.lsrVal(data)
 		r.incPC()
 	def ror(self):           #DONE
+		print('Run ROR')
 		data = mem.read()
 		data = ALU.rorVal(data)
 		mem.write(data)
 		r.incPC()
 	def stx(self):         #DONE
+		print('Run STX')
 		mem.write(r.regX)
 		r.incPC()
 	def ldx(self):       #DONE
+		print('Run LDX')
 		data = mem.read()
 		r.regX = data
 		r.incPC()
 	def dec(self):         #DONE
+		print('Run DEC')
 		data = mem.read()
 		data = ALU.decVal(data)
 		mem.write(data)
 	def inc(self):          #DONE
+		print('Run INC')
 		data = mem.read()
 		data = ALU.incVal(data)
 		mem.write(data)
@@ -696,21 +811,28 @@ class _decode:
 		( bitarray('1101 1110', endian='big'), True, e.dec ),( bitarray('1111 1110', endian='big'), True, e.inc ),
 
 		( bitarray('1110 1010', endian='big'), False, e.nop )]
-		self.addressModeLUT = [ (bitarray('01 000', endian='big') , AM.zeroPageX), (bitarray('10 000', endian='big') , AM.immediate),
-	                   (bitarray('01 001', endian='big') , AM.zeroPage),  (bitarray('10 001', endian='big') , AM.zeroPage),
-	                   (bitarray('01 010', endian='big') , AM.immediate), (bitarray('10 010', endian='big') , AM.accumulator),
-	                   (bitarray('01 011', endian='big') , AM.absolute),  (bitarray('10 011', endian='big') , AM.absolute),
-	                   (bitarray('01 100', endian='big') , AM.zeroPageY), 
-	                   (bitarray('01 101', endian='big') , AM.indirectX), (bitarray('10 101', endian='big') , AM.indirectX),
-	                   (bitarray('01 110', endian='big') , AM.absoluteY), 
-	                   (bitarray('01 111', endian='big') , AM.absoluteX), (bitarray('10 111', endian='big') , AM.absoluteX),
+		self.addressModeLUT = [ 
 
 	                   (bitarray('00 000', endian='big') , AM.immediate),
 	                   (bitarray('00 001', endian='big') , AM.zeroPage),
 	                   (bitarray('00 011', endian='big') , AM.absolute),
 	                   (bitarray('00 100', endian='big') , AM.relative),
 	                   (bitarray('00 101', endian='big') , AM.indirectX),
-	                   (bitarray('00 111', endian='big') , AM.absoluteX),]
+	                   (bitarray('00 111', endian='big') , AM.absoluteX),
+	                   (bitarray('01 000', endian='big') , AM.zeroPageX), 
+	                   (bitarray('01 001', endian='big') , AM.zeroPage),  
+	                   (bitarray('01 010', endian='big') , AM.immediate), 
+	                   (bitarray('01 011', endian='big') , AM.absolute),  
+	                   (bitarray('01 100', endian='big') , AM.zeroPageY), 
+	                   (bitarray('01 101', endian='big') , AM.indirectX), 
+	                   (bitarray('01 110', endian='big') , AM.absoluteY), 
+	                   (bitarray('01 111', endian='big') , AM.absoluteX), 
+	                   (bitarray('10 000', endian='big') , AM.immediate),
+	                   (bitarray('10 001', endian='big') , AM.zeroPage),
+	                   (bitarray('10 010', endian='big') , AM.accumulator),
+	                   (bitarray('10 011', endian='big') , AM.absolute),
+	                   (bitarray('10 101', endian='big') , AM.indirectX),
+	                   (bitarray('10 111', endian='big') , AM.absoluteX),]
 		self.instruction = bitarray('0000 0000',endian='big')
 
 	def setInstruction(self, instruction):
@@ -731,10 +853,16 @@ class _decode:
 		return decodedAddressMode, decodedInstruction
 	def parseInstructionReg(self):
 		self.setInstruction(r.instructReg)
+		print('Instruction: ')
+		print(str(hex(ba2int(r.instructReg))))
+		print(' ')
 		decodedAddressMode, decodedInstruction = self.parse()
+		
+
 		return decodedAddressMode, decodedInstruction
 	def getAddressMode(self):
 		aOPC = self.instruction[6:] + self.instruction[3:6]
+		print('OPC',self.instruction[6:],self.instruction[3:6])
 		low = 0
 		high = len(self.addressModeLUT)-1
 		while(low<=high):
@@ -747,7 +875,11 @@ class _decode:
 			if(aOPC > element[0]):
 				low = mid + 1
 		print('FAILED TO FIND ADDRESS MODE')
-		return False
+		
+		element = self.addressModeLUT[mid+1]
+		print(element[0])
+		return element[1]
+
 	def getInstruction(self):
 		OPC = self.instruction[6:] + self.instruction[:6]
 		low = 0
@@ -768,10 +900,9 @@ class _decode:
 		element = self.LUT[mid+1]
 		if(element[1] == False):
 			print('FAILED, IMPLIED ADDRESS MODE')
-			return None
 		if((ba2int(element[0]) - ba2int(self.instruction)) > 8):
 			print('FAILED, ROUNDED TOO FAR')
-			return None
+
 		return element
 	def getGroup(self):
 		return self.instruction[6:]
@@ -783,34 +914,33 @@ class _cycle:
 	global decode
 	global AM
 	global e
-	def __init__(self):
-		r.acc=r.zeros
-		r.regX=r.zeros
-		r.regY=r.zeros
-		r.stackPoint=r.zeros
-		r.flagReg=r.zeros
-		r.instructReg=r.zeros
-		rHigh, rLow = mem.getResetV()
-		r.setPCHigh(rHigh)
-		r.setPCLow(rLow)
-		self.cycle()
+	global l
+
 	def cycle(self):
 		r.setInstructionReg()
 		decodedAddressMode, decodedInstruction = decode.parseInstructionReg()
 		decodedAddressMode()
 		decodedInstruction()
-		r.incPC()
+		#r.incPC()
+		l.output()
 	def reset(self):
-		r.acc=r.zeros
-		r.regX=r.zeros
-		r.regY=r.zeros
-		r.stackPoint=r.zeros
-		r.flagReg=r.zeros
-		r.instructReg=r.zeros
-		rHigh, rLow = mem.getResetV()
-		r.setPCHigh(rHigh)
-		r.setPCLow(rLow)
-		self.cycle()
+		print('RESETTING')
+		r.PC = bitarray('0000 0000 0000 0000',endian='big')
+		r.acc = r.zeros
+		r.regX = r.zeros
+		r.regY = r.zeros
+		r.flagReg = bitarray('0010 0000', endian='big')
+		r.instructReg = r.zeros
+		r.stackPoint = r.zeros
+		mem.addIndex = 0
+		mem.setAddressFromPC()
+		print('PC:',r.PC)
+		r.setInstructionReg()
+		print('got instruction. PC:',r.PC)
+		decodedAddressMode, decodedInstruction = decode.parseInstructionReg()
+		decodedAddressMode()
+		decodedInstruction()
+
 
 
 
@@ -818,9 +948,10 @@ r = _registers()
 mem = _memory()
 ALU = _ALU()
 e = _execute()
-AM = _runAddressModes(mem)
+AM = _runAddressModes()
 decode = _decode()
 cpu = _cycle()
+
 
 
 charBuff = []
@@ -831,8 +962,15 @@ def quitProg():
 	keyboard.unhook_all()
 	os._exit(1)
 
-for i in range(0,1000000000):
-	print(charBuff)
+prog = bitarray('1010 0101 0000 1000 0110 0101 0000 1000 0100 1100 0000 0000 0000 0000 0000 0000 0000 0010',endian='big')
+i=0
+while i < len(prog):
+	mem.memoryBlock[i] = prog[i]
+	i+=1
+cpu.reset()
+print(r.PC)
+for i in range(0,10):
+	cpu.cycle()
 
 keyboard.on_press(pressEvent)
 keyboard.add_hotkey('ctrl+z', quitProg)
