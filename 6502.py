@@ -245,10 +245,17 @@ class _runAddressModes:
 		self.m.setAddressLow(r.regY)
 	def indirectX(self):
 		self.m.accMode = False
-		print('weirdmode')
-		r.eA[0] = r.zeros[0]
-		#literally fuck this shit lmao
-		incPC()
+		print('indirectX')
+		r.incPC()
+		data = self.m.read()
+		self.m.setAddressHigh(r.zeros)
+		self.m.setAddressLow(data)
+		high = self.m.read()
+		data = ALU.incVal(data)
+		self.m.setAddressLow(data)
+		low = self.m.read()
+		self.m.setAddressHigh(high)
+		self.m.setAddressLow(low)
 	def absoluteY(self):
 		self.m.accMode = False
 		print('absoluteY')
@@ -265,8 +272,11 @@ class _runAddressModes:
 		print('accumulator mode')
 		self.m.accMode = True
 	def relative(self):
-		pass
+		self.m.accMode = False
+		print('relative')
+		r.incPC()
 	def implied(self):
+		print('implied')
 		pass
 class _ALU:
 	global r
@@ -628,12 +638,12 @@ class _execute:
 		data = mem.read()
 		data = ALU.lsrVal(data)
 		r.incPC()
-	def ror(self):
+	def ror(self):           #DONE
 		data = mem.read()
 		data = ALU.rorVal(data)
 		mem.write(data)
 		r.incPC()
-	def stx(self):
+	def stx(self):         #DONE
 		mem.write(r.regX)
 		r.incPC()
 	def ldx(self):       #DONE
