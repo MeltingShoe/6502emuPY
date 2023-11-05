@@ -99,6 +99,11 @@ class _registers:
 		self.ones = bitarray('1111 1111', endian='big')
 		self.zeros = bitarray('0000 0000', endian='big')
 		self.instructReg = bitarray('0000 0000', endian='big')
+		self.savedPC = self.PC
+	def savePC(self):
+		self.savedPC = self.PC
+	def restorePC(self):
+		self.PC = self.savedPC
 	def setPCLow(self,inp):
 		self.PC[8:] = inp
 		print('L',self.PC)
@@ -111,15 +116,10 @@ class _registers:
 		return self.PC[:8]
 	def incPC(self):
 		h=self.PC
-		x, c0 = ALU.incVal(self.getPCLow(),retCarry=True)
-		if(c0):
-			y = ALU.incVal(self.getPCHigh())
-		else:
-			y = self.getPCHigh()
-		print(x,self.getPCLow(),c0,y)
-		self.setPCLow(x)
-		self.setPCHigh(y)
-		mem.setAddressFromPC()
+		x = ba2int(h)
+		x+=1
+		x=baFromInt(x)
+		self.PC = x
 		print('PC: ',h,' -> ',self.PC)
 	def iFlag(self, setVal = None):
 		if setVal is None:
@@ -160,14 +160,20 @@ class _memory:
 	global l
 	def __init__(self):
 		self.memoryBlock = bitarray(524288,endian='big')
-		self.addressLow = bitarray('0000 0000',endian='big')
-		self.addressHigh = bitarray('0000 0000',endian='big')
-		self.address = self.addressHigh + self.addressLow
+		self.address = bitarray('0000 0000 0000 0000',endian='big')
+		self.eStart = (ba2int(self.address)*8)
+		self.eStop = self.eStart+8
 		self.resetVector = bitarray('0000 0000 0000 0000',endian='big')
 		self.nmiVector = bitarray('0000 1111 0000 0000',endian='big')
 		self.irqVector = bitarray('0000 1100 0000 0000',endian='big')
 		self.accMode = False
 		self.addIndex = 0
+	def updateAddress(self):
+		self.address = r.PC
+	def updateEA(self):
+		self.updateAddress()
+		self.eStart = ba2int(self.address) * 8
+		self.eStop = self.eStart+8
 	def setVectors(self):
 		self.setAddressHigh(bitarray('1111 1111',endian='big'))
 		self.setAddressLow(bitarray('1111 1010',endian='big'))
@@ -219,7 +225,6 @@ class _memory:
 		print('addy: ',self.address)
 		
 		addy = self.address
-		addy = addy << 1
 
 		print('eA: ',addy)
 		self.addIndex = ba2int(addy)
@@ -232,10 +237,10 @@ class _memory:
 			print(str(hex(ba2int(r.acc))))
 			return r.acc
 		else:
-			self.getEffectiveAddress()
-			print('data' + str(hex(ba2int(self.memoryBlock[self.addIndex:8+self.addIndex]))))
+			self.updateEA()
+			print('data' + str(hex(ba2int(self.memoryBlock[self.eStart:self.eStop]))))
 
-			return(self.memoryBlock[self.addIndex:8+self.addIndex])
+			return(self.memoryBlock[self.eStart:self.eStop])
 	def write(self, data):
 		print('Writing')
 
@@ -244,10 +249,9 @@ class _memory:
 			print(str(hex(ba2int(r.acc))))
 			r.acc = data
 		else:
-			self.getEffectiveAddress()
-			self.memoryBlock[self.addIndex:8+self.addIndex] = data
-			print(str(hex(ba2int(self.memoryBlock[self.addIndex:8+self.addIndex]))))
-			print('  ')
+			self.updateEA()
+			self.memoryBlock[self.eStart:self.eStop] = data
+			print(str(hex(ba2int(self.memoryBlock[self.eStart:self.eStop]))))
 			return True
 	def setAddressFromPC(self):
 		self.setAddressHigh(r.PC[:8])
@@ -264,10 +268,11 @@ class _runAddressModes:
 		mem.accMode = False
 		print('Run zeroPage')
 		r.incPC()
-		mem.setAddressFromPC()
 		lowBit = mem.read()
-		mem.setAddressLow(lowBit)
-		mem.setAddressHigh(r.zeros)
+		r.incPC()
+		r.savePC()
+		r.PC = r.zeros+lowBit
+		print(r.PC)
 	def absoluteX(self):
 		mem.accMode = False
 		print('Run absoluteX')
@@ -289,13 +294,7 @@ class _runAddressModes:
 		mem.accMode = False
 		print('Run absolute')
 		r.incPC()
-		mem.setAddressFromPC()
-		highPart = mem.read()
-		r.incPC()
-		mem.setAddressFromPC()
-		lowPart = mem.read()
-		mem.setAddressHigh(highPart)
-		mem.setAddressLow(lowPart)
+		
 	def zeroPageY(self):
 		mem.accMode = False
 		print('Run zeroPageY')
@@ -660,22 +659,16 @@ class _execute:
 		highPart = mem.read()
 		r.incPC()
 		lowPart = mem.read()
-		r.setPCHigh(highPart)
-		r.setPCLow(lowPart)
-		mem.setAddressFromPC()
-		highPart = mem.read()
-		r.incPC()
-		lowPart = mem.read()
-		r.setPCHigh(highPart)
-		r.setPCLow(lowPart)
+		r.PC = highPart+lowPart
+		r.savePC()
 	def jmpAbsolute(self):                    #DONE
 		print('Run JMP abs')
 		r.incPC()
 		highPart = mem.read()
 		r.incPC()
 		lowPart = mem.read()
-		r.setPCHigh(highPart)
-		r.setPCLow(lowPart)
+		r.PC = highPart+lowPart
+		r.savePC()
 	def sty(self):              #DONE
 		print('Run STY')
 		mem.write(r.regY)
@@ -697,13 +690,13 @@ class _execute:
 		print('Run ORA')
 		data = mem.read()
 		r.acc |= data
-		ALU.add(r.zeros,cFlag=False,vFlag=False)
+		ALU.add(r.zeros)
 		r.incPC()
 	def eor(self):        #DONE
 		print('Run EOR')
 		data = mem.read()
 		r.acc ^= data
-		ALU.add(r.zeros,cFlag=False,vFlag=False)
+		ALU.add(r.zeros)
 	def sta(self):        #DONE
 		print('Run STA')
 		mem.write(r.acc)
@@ -719,13 +712,12 @@ class _execute:
 	def adc(self):   #DONE
 		print('Run ADC')
 		data = mem.read()
-		r.acc, carryOut = ALU.add(data)
+		ALU.add(data)
 	def lda(self):          #DONE
 		print('Run LDA')
 		data = mem.read()
 		r.acc = data
-		r.incPC()
-		print('PC: ',r.PC)
+		print('acc: ',r.acc)
 	def sbc(self):              #DONE
 		print('Run SBC')
 		data = mem.read()
@@ -776,39 +768,65 @@ class _execute:
 class _decode:
 	global r
 	def __init__(self):
-		self.LUT=[( bitarray('0000 0000', endian='big'), False, e.brk ),( bitarray('0000 1000', endian='big'), False, e.php ),
-		( bitarray('0001 0000', endian='big'), True, e.bpl ),( bitarray('0001 1000', endian='big'), False, e.clc ),
-		( bitarray('0010 0000', endian='big'), False, e.jsrAbsolute ),( bitarray('0010 1000', endian='big'), False, e.plp ), 
-		( bitarray('0011 0000', endian='big'), True, e.bmi ),( bitarray('0011 1000', endian='big'), False, e.sec ),
+		self.LUT=[( bitarray('0000 0000', endian='big'), False, e.brk ),
+		( bitarray('0000 1000', endian='big'), False, e.php ),
+		( bitarray('0001 0000', endian='big'), True, e.bpl ),
+		( bitarray('0001 1000', endian='big'), False, e.clc ),
+		( bitarray('0010 0000', endian='big'), False, e.jsrAbsolute ),
+		( bitarray('0010 1000', endian='big'), False, e.plp ), 
+		( bitarray('0011 0000', endian='big'), True, e.bmi ),
+		( bitarray('0011 1000', endian='big'), False, e.sec ),
 		( bitarray('0011 1100', endian='big'), True, e.bit ),
 
-		( bitarray('0100 0000', endian='big'), False, e.rti ),( bitarray('0100 1000', endian='big'), False, e.pha ),
-		( bitarray('0101 0000', endian='big'), True, e.bvc ),( bitarray('0101 1000', endian='big'), False, e.cli ),
-		( bitarray('0101 1100', endian='big'), True, e.jmp ),( bitarray('0110 0000', endian='big'), False, e.rts ), 
-		( bitarray('0110 1000', endian='big'), False, e.pla ),( bitarray('0111 0000', endian='big'), True, e.bvs ),
-		( bitarray('0111 1000', endian='big'), False, e.sei ),( bitarray('0111 1100', endian='big'), True, e.jmpAbsolute ),
+		( bitarray('0100 0000', endian='big'), False, e.rti ),
+		( bitarray('0100 1000', endian='big'), False, e.pha ),
+		( bitarray('0101 0000', endian='big'), True, e.bvc ),
+		( bitarray('0101 1000', endian='big'), False, e.cli ),
+		( bitarray('0101 1100', endian='big'), True, e.jmp ),
+		( bitarray('0110 0000', endian='big'), False, e.rts ), 
+		( bitarray('0110 1000', endian='big'), False, e.pla ),
+		( bitarray('0111 0000', endian='big'), True, e.bvs ),
+		( bitarray('0111 1000', endian='big'), False, e.sei ),
+		( bitarray('0111 1100', endian='big'), True, e.jmpAbsolute ),
 
-		( bitarray('1000 1000', endian='big'), False, e.dey ),( bitarray('1001 0000', endian='big'), True, e.bcc ),
-		( bitarray('1001 1000', endian='big'), False, e.tya ),( bitarray('1001 1100', endian='big'), True, e.sty ),
-		( bitarray('1010 1000', endian='big'), False, e.tay ),( bitarray('1011 0000', endian='big'), True, e.bcs ) ,
-		( bitarray('1011 1000', endian='big'), False, e.clv ),( bitarray('1011 1100', endian='big'), True, e.ldy ) ,
+		( bitarray('1000 1000', endian='big'), False, e.dey ),
+		( bitarray('1001 0000', endian='big'), True, e.bcc ),
+		( bitarray('1001 1000', endian='big'), False, e.tya ),
+		( bitarray('1001 1100', endian='big'), True, e.sty ),
+		( bitarray('1010 1000', endian='big'), False, e.tay ),
+		( bitarray('1011 0000', endian='big'), True, e.bcs ) ,
+		( bitarray('1011 1000', endian='big'), False, e.clv ),
+		( bitarray('1011 1100', endian='big'), True, e.ldy ) ,
 		 
-		( bitarray('1100 1000', endian='big'), False, e.iny ),( bitarray('1101 0000', endian='big'), True, e.bne ),
-		( bitarray('1101 1100', endian='big'), True, e.cpy ),( bitarray('1110 1000', endian='big'), False, e.inx ) ,
-		( bitarray('1111 0000', endian='big'), True, e.beq ),( bitarray('1111 1100', endian='big'), True, e.cpx ) ,
+		( bitarray('1100 1000', endian='big'), False, e.iny ),
+		( bitarray('1101 0000', endian='big'), True, e.bne ),
+		( bitarray('1101 1100', endian='big'), True, e.cpy ),
+		( bitarray('1110 1000', endian='big'), False, e.inx ) ,
+		( bitarray('1111 0000', endian='big'), True, e.beq ),
+		( bitarray('1111 1100', endian='big'), True, e.cpx ) ,
 
-		( bitarray('0001 1101', endian='big'), True, e.ora ),( bitarray('0101 1101', endian='big'), True, e.eor ),
-		( bitarray('1001 1101', endian='big'), True, e.sta ),( bitarray('1101 1101', endian='big'), True, e.cmp ),
-		( bitarray('0011 1101', endian='big'), True, e.andInstruct ),( bitarray('0111 1101', endian='big'), True, e.adc ),
-		( bitarray('1011 1101', endian='big'), True, e.lda ),( bitarray('1111 1101', endian='big'), True, e.sbc ),
+		( bitarray('0001 1101', endian='big'), True, e.ora ),
+		( bitarray('0011 1101', endian='big'), True, e.andInstruct ),
+		( bitarray('0101 1101', endian='big'), True, e.eor ),
+		( bitarray('0111 1101', endian='big'), True, e.adc ),
+		( bitarray('1001 1101', endian='big'), True, e.sta ),
+		( bitarray('1011 1101', endian='big'), True, e.lda ),
+		( bitarray('1101 1101', endian='big'), True, e.cmp ),
+		( bitarray('1111 1101', endian='big'), True, e.sbc ),
 
-		( bitarray('0001 1110', endian='big'), True, e.asl ),( bitarray('0011 1110', endian='big'), True, e.rol ) ,
-		( bitarray('0101 1110', endian='big'), True, e.lsr ),( bitarray('0111 1110', endian='big'), True, e.ror ) ,
-		( bitarray('1000 1010', endian='big'), False, e.txa ),( bitarray('1001 1010', endian='big'), True, e.txs ) ,
-		( bitarray('1001 1110', endian='big'), True, e.stx ),( bitarray('1011 1010', endian='big'), False, e.tsx ) ,
+		( bitarray('0001 1110', endian='big'), True, e.asl ),
+		( bitarray('0011 1110', endian='big'), True, e.rol ) ,
+		( bitarray('0101 1110', endian='big'), True, e.lsr ),
+		( bitarray('0111 1110', endian='big'), True, e.ror ) ,
+		( bitarray('1000 1010', endian='big'), False, e.txa ),
+		( bitarray('1001 1010', endian='big'), True, e.txs ) ,
+		( bitarray('1001 1110', endian='big'), True, e.stx ),
+		( bitarray('1011 1010', endian='big'), False, e.tsx ) ,
 		( bitarray('1011 1110', endian='big'), True, e.ldx ) ,
-		( bitarray('1010 1010', endian='big'), False, e.tax ),( bitarray('1100 1010', endian='big'), True, e.dex ),
-		( bitarray('1101 1110', endian='big'), True, e.dec ),( bitarray('1111 1110', endian='big'), True, e.inc ),
+		( bitarray('1010 1010', endian='big'), False, e.tax ),
+		( bitarray('1100 1010', endian='big'), True, e.dex ),
+		( bitarray('1101 1110', endian='big'), True, e.dec ),
+		( bitarray('1111 1110', endian='big'), True, e.inc ),
 
 		( bitarray('1110 1010', endian='big'), False, e.nop )]
 		self.addressModeLUT = [ 
@@ -897,7 +915,7 @@ class _decode:
 			if(OPC > key):
 				low = mid + 1
 		print('FAILED TO FIND INSTRUCTION, ROUNDING UP')
-		element = self.LUT[mid+1]
+		element = self.LUT[mid]
 		if(element[1] == False):
 			print('FAILED, IMPLIED ADDRESS MODE')
 		if((ba2int(element[0]) - ba2int(self.instruction)) > 8):
@@ -921,8 +939,8 @@ class _cycle:
 		decodedAddressMode, decodedInstruction = decode.parseInstructionReg()
 		decodedAddressMode()
 		decodedInstruction()
-		#r.incPC()
-		l.output()
+		r.restorePC()
+		print('acc: ',r.acc)
 	def reset(self):
 		print('RESETTING')
 		r.PC = bitarray('0000 0000 0000 0000',endian='big')
@@ -963,9 +981,10 @@ def quitProg():
 	os._exit(1)
 
 prog = bitarray('1010 0101 0000 1000 0110 0101 0000 1000 0100 1100 0000 0000 0000 0000 0000 0000 0000 0010',endian='big')
+prog1 = bitarray('1010 0101 0000 1000 0110 0101 0000 1000 0111 1100 0000 0000 0000 0000 0000 0001',endian='big')
 i=0
-while i < len(prog):
-	mem.memoryBlock[i] = prog[i]
+while i < len(prog1):
+	mem.memoryBlock[i] = prog1[i]
 	i+=1
 cpu.reset()
 print(r.PC)
