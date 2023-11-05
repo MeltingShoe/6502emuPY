@@ -1,7 +1,8 @@
 import keyboard
 import os
 from bitarray import bitarray
-
+from bitarray.util import ba2int
+from bitarray.util import int2ba
 
 '''LUT = [ ( bitarray('1110 1010', endian='big') , e.nop ) , ( bitarray('1110 1010', endian='big') , e.dex ),
 			( bitarray('1011 1010', endian='big') , e.tsx ) , ( bitarray('1110 1010', endian='big') , e.tax ),
@@ -39,95 +40,304 @@ from bitarray import bitarray
 			( bitarray('001x xx01', endian='big') , e.andInstruct ) , ( bitarray('000x xx01', endian='big') , e.ora ) ]'''
 
 
-charBuff = []
-PC = bitarray('0000 0000 0000 0000', endian='big')
-stackPoint = bitarray('0011 0011', endian='big')
-eA = bitarray('0 0000 0000 0000 0000', endian='big')
-acc = bitarray('0000 0000', endian='big')
-regX = bitarray('0011 0011', endian='big')
-regY = bitarray('0011 0011', endian='big')
-flagReg = bitarray('0010 0000', endian='big')
-regA = bitarray('1010 1001', endian='big')
-regB = bitarray('1100 0011', endian='big')
-sumReg = bitarray('0011 0011', endian='big')
-ones = bitarray('1111 1111', endian='big')
-zeros = bitarray('0000 0000', endian='big')
-stepCounter = bitarray('0000', endian='big')
-instructReg = bitarray('0000 0000', endian='big')
 
 class registers:
-	def __init__(self,PC,stackPoint,eA,acc,regX,regY,flagReg,ones,zeros,stepCounter,instructReg):
-		self.PC = PC
-		self.stackPoint = stackPoint
-		self.eA = eA
-		self.acc = acc
-		self.regX = regX
-		self.regY = regY
-		self.flagReg = flagReg
-		self.ones = ones
-		self.zeros = zeros
-		self.stepCounter = stepCounter
-		self.instructReg = instructReg
-	def updateEA(self):
-		self.eA[1:] = self.PC
-
-		self.eA[1] = self.eA[4]
-		self.eA[2] = self.eA[5]
-		self.eA[3] = self.eA[6]
-		self.eA[4] = self.eA[7]
-		self.eA[5] = self.eA[8]
-		self.eA[6] = self.eA[9]
-		self.eA[7] = self.eA[10]
-		self.eA[8] = self.eA[11]
-		self.eA[9] = self.eA[12]
-		self.eA[10] = self.eA[13]
-		self.eA[11] = self.eA[14]
-		self.eA[12] = self.eA[15]
-		self.eA[13] = self.eA[16]
-		self.eA[14] = self.zeros[0]
-		self.eA[15] = self.zeros[0]
-		self.eA[16] = self.zeros[0]
-
-
-r = registers(PC,stackPoint,eA,acc,regX,regY,flagReg,ones,zeros,stepCounter,instructReg)
-
-zeroPage = bitarray(2048)
-stack = bitarray(2048)
-IO = bitarray(2048)
-vectors = bitarray(48)
-rom = bitarray(32768)
-ram = bitarray(28624)
-
-524288
+	def __init__(self):
+		self.PC = bitarray('0000 0000 0000 0000', endian='big')
+		self.stackPoint = bitarray('0000 0000', endian='big')
+		self.acc = bitarray('0000 0000', endian='big')
+		self.regX = bitarray('0000 0000', endian='big')
+		self.regY = bitarray('0000 0000', endian='big')
+		self.flagReg = bitarray('0010 0000', endian='big')
+		self.ones = bitarray('1111 1111', endian='big')
+		self.zeros = bitarray('0000 0000', endian='big')
+		self.instructReg = bitarray('0000 0000', endian='big')
+	def incPC(self):
+		num = ba2int(self.PC)
+		num += 1
+		num = baFromInt(num)
+		self.PC = num
+	def cFlag(self, setVal = None):
+		if setVal is None:
+			return self.flagReg[7]
+		else:
+			self.flagReg[7] = setVal
+			return self.flagReg[7]
+	def zFlag(self, setVal = None):
+		if setVal is None:
+			return self.flagReg[6]
+		else:
+			self.flagReg[6] = setVal
+			return self.flagReg[6]
+	def nFlag(self, setVal = None):
+		if setVal is None:
+			return self.flagReg[0]
+		else:
+			self.flagReg[0] = setVal
+			return self.flagReg[0]
+	def vFlag(self, setVal = None):
+		if setVal is None:
+			return self.flagReg[1]
+		else:
+			self.flagReg[1] = setVal
+			return self.flagReg[1]
 class memory:
 	global r
+	global ALU
 	def __init__(self):
 		self.memoryBlock = bitarray.zeros(524288,endian='big')
-	def readFromAddress(self, address):
-		return(memoryBlock[address*8:(address+1)*8])
-	def writeToAddress(self, address, data):
-		if(address<32768):
-			memoryBlock[address*8:(address+1)*8] = data
-			return True
-		else:
-			return False
-	def writeToROM(self, address, data):    #This is more for the backend, gives full control where the other one doesn't let you write here
-		memoryBlock[address*8:(address+1)*8] = data
+		self.addressLow = bitarray.zeros(8,endian='big')
+		self.addressHigh = bitarray.zeros(8,endian='big')
+		self.address = self.addressHigh + self.addressLow
+		self.resetVector = bitarray('0000 0000 0000 0000',endian='big')
+		self.nmiVector = bitarray('0000 1111 0000 0000',endian='big')
+		self.irqVector = bitarray('0000 1100 0000 0000',endian='big')
+		self.accMode = False
+		self.setVectors()
+		self.addIndex = 0
+
+	def setVectors(self):
+		self.setAddressHigh(bitarray('1111 1111',endian='big'))
+		self.setAddressLow(bitarray('1111 1010',endian='big'))
+		self.write(self.nmiVector[:8])
+		self.setAddressLow(bitarray('1111 1011',endian='big'))
+		self.write(self.nmiVector[8:])
+		self.setAddressLow(bitarray('1111 1100',endian='big'))
+		self.write(self.resetVector[:8])
+		self.setAddressLow(bitarray('1111 1101',endian='big'))
+		self.write(self.resetVector[8:])
+		self.setAddressLow(bitarray('1111 1110',endian='big'))
+		self.write(self.irqVector[:8])
+		self.setAddressLow(bitarray('1111 1111',endian='big'))
+		self.write(self.irqVector[8:])
+	
+	def setAddressHigh(self, address):
+		self.addressHigh=address
+	def setAddressLow(self, address):
+		self.addressHigh=address
+	def getAddressHigh(self):
+		return self.addressHigh
+	def getAddressLow(self):
+		return self.addressLow
+	def getAddress(self):
+		self.address = self.addressHigh + self.addressLow
+		return self.address
+	def getEffectiveAddress(self):
+		self.address = self.addressHigh + self.addressLow
+		addy = ba2int(self.address)
+		self.addIndex = addy*8
+		return addIndex
+	def read(self):
+		self.getEffectiveAddress()
+		return(memoryBlock[self.addIndex:self.addIndex+8])
+	def write(self, data):
+		self.getEffectiveAddress()
+		memoryBlock[self.addIndex:self.addIndex+8] = data
 		return True
-
-prog = bitarray('1010 1001 1111 0000 0110 1001 0000 0001 0110 1100 0000 0000',endian='big')
-i1 = 0
-while(i1<len(prog)):
-	zeroPage[i1] = prog[i1]
-	i1+=1
-
-# READOUT OF PROGRAM
-i2 = 0
-print('PROGRAM:')
-while(i2<i1):
-	print(i2,": ",zeroPage[i2:i2+8])
-	i2+=8
-print('PROGRAM COMPLETE, STARTING...')
+	def setAddressFromPC(self):
+		setAddressHigh(r.PC[:8])
+		setAddressLow(r.PC[8:])
+	def setAddressMode(self, instruction):
+		return None   #call the right method to get the target address, then return the target address
+	def zeroPageX(self):
+		print('zeroPageX')
+		self.setAddressHigh(r.zeros)
+		self.setAddressLow(r.regX)
+	def zeroPage(self):	
+		print('zeroPage')
+		r.incPC()
+		self.setAddressFromPC()
+		lowBit = self.read()
+		setAddressLow(lowBit)
+		self.setAddressHigh(r.zeros)
+	def absoluteX(self):
+		print('absoluteX')
+		r.incPC()
+		self.setAddressFromPC()
+		highPart = self.read()
+		r.incPC()
+		self.setAddressFromPC()
+		lowPart = self.read()
+		ALU.addOffset()
+		
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
+		r.updateEA()
+		r.PC=temp
+	def immediate(self):
+		r.eA[0] = r.zeros[0]
+		print('immediate')
+	def absolute(self):
+		print('absolute')
+		incPC()
+		highPart = memMap()
+		incPC()
+		lowPart = memMap()
+		temp = r.PC
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
+		r.updateEA()
+		r.PC=temp
+	def zeroPageY(self):
+		print('zeroPageY')
+		r.eA[0] = r.zeros[0]
+		incPC()
+		data = memMap()
+		r.eA[1:9] = r.zeros
+		data, carry = megaAdder(cIn=0,carry=0,overflow=0,neg=0,zero=0,rA=data,rB=regY)
+		r.eA[9:] = data
+		r.updateEA()
+	def zeroPageXOther(self):
+		print('weirdmode')
+		r.eA[0] = r.zeros[0]
+		#literally fuck this shit lmao
+		incPC()
+	def absoluteY(self):
+		print('absoluteY')
+		incPC()
+		highPart = memMap()
+		incPC()
+		lowPart = memMap()
+		temp = r.PC
+		lowPart, carry = megaAdder(cIn=0,carry=0,overflow=0,neg=0,zero=0,rA=lowPart,rB=regY)
+		highPart, carry = megaAdder(cIn=carry,carry=0,overflow=0,neg=0,zero=0,rA=highPart,rB=zeros)
+		r.PC[:8] = highPart
+		r.PC[8:] = lowPart
+		r.updateEA()
+		r.PC=temp
+	def accumulator(self):
+		print('accumulator mode')
+		r.eA[0] = r.ones[0]	
+class ALU:
+	global r
+	def __init__(self):
+		print('hewwo im ALU')
+	def fullAdder(self,a,b,cIn):
+			hXor = a^b
+			hOut = a&b
+			s = hXor^cIn
+			fOut = hXor&cIn
+			cOut = fOut | hOut
+			return s,cOut
+	def addOffset(self,high,low,offset):
+		sL, c = addVal(low,offset,carry=0,flags=False)
+		sH, c = addVal(high,r.zeros,carry=c,flags=False)
+		return sH, sL
+	def add16bTo8b(self,a,b):
+		sL, c = addVal(a[:8],b,carry=0,flags=False)
+		sH, c = addVal(a[8:],r.zeros,carry=c,flags=False)
+		sF = sH + sL
+		return sF
+	def addVal(self, data1, data2, carry = None, flags = True, cFlag=True, zFlag=True, nFlag=True, vFlag=True):
+		if carry is None:
+			cIn = r.flagReg[7]
+		else:
+			cIn = carry
+		out = r.zeros
+		out[7], cIn = self.fullAdder(data1[7],data2[7],cIn)
+		out[6], cIn = self.fullAdder(data1[6],data2[6],cIn)
+		out[5], cIn = self.fullAdder(data1[5],data2[5],cIn)
+		out[4], cIn = self.fullAdder(data1[4],data2[4],cIn)
+		out[3], cIn = self.fullAdder(data1[3],data2[3],cIn)
+		out[2], cIn = self.fullAdder(data1[2],data2[2],cIn)
+		out[1], cIn = self.fullAdder(data1[1],data2[1],cIn)
+		out[0], cOut = self.fullAdder(data1[0],data2[0],cIn)
+		if(flags):
+			if(vFlag):    #FIX THIS FLAG
+				pass
+			if(cFlag):
+				r.cFlag(setVal=cOut)
+			if(nFlag):
+				r.nFlag(setVal=out[0])
+			if(zFlag):
+				r.zFlag(setVal=out.any())
+		if carry is None:
+			return out
+		else:
+			return out, cOut
+	def subVal(self, data1, data2, carry = None, flags = True, cFlag=True, zFlag=True, nFlag=True, vFlag=True):
+		if carry is None:            # RATHER THAN SETTING THE CARRY TO 1 FOR SUB WE'RE JUST INCREMENTING D1
+			cIn = r.flagReg[7]       # THIS LETS US TAKE IN A CARRY
+		else:
+			cIn = carry
+		data1 = self.incVal(data1)
+		data2 = data2^r.ones
+		out = r.zeros
+		out[7], cIn = self.fullAdder(data1[7],data2[7],cIn)
+		out[6], cIn = self.fullAdder(data1[6],data2[6],cIn)
+		out[5], cIn = self.fullAdder(data1[5],data2[5],cIn)
+		out[4], cIn = self.fullAdder(data1[4],data2[4],cIn)
+		out[3], cIn = self.fullAdder(data1[3],data2[3],cIn)
+		out[2], cIn = self.fullAdder(data1[2],data2[2],cIn)
+		out[1], cIn = self.fullAdder(data1[1],data2[1],cIn)
+		out[0], cOut = self.fullAdder(data1[0],data2[0],cIn)
+		if(flags):
+			if(vFlag):    #FIX THIS FLAG
+				pass
+			if(cFlag):
+				r.flagReg[7] = cOut
+			if(nFlag):
+				r.flagReg[0] = out[0]
+			if(zFlag):
+				r.flagReg[6] = out.any() ^ r.ones[1]
+		if carry is None:
+			return out
+		else:
+			return out, cOut
+	def add(self, data):
+		r.acc = self.addVal(r.acc, data)
+	def sub(self, data):
+		r.acc = subVal(r.acc, data)
+	def incVal(self, data, retCarry = False, flags = False, cFlag=False, zFlag=False, nFlag=False, vFlag=False)
+		s, c = addVal(data, r.zeros, carry = r.ones[0], flags=flags, cFlag=cFlag, zFlag=zFlag, nFlag=nFlag, vFlag=vFlag)
+		if(retCarry):
+			return s,c
+		return s
+	def decVal(self, data, retCarry = False, flags = False, cFlag=False, zFlag=False, nFlag=False, vFlag=False)
+		s, c = addVal(data, r.ones, carry = r.zeros[0], flags=flags, cFlag=cFlag, zFlag=zFlag, nFlag=nFlag, vFlag=vFlag)
+		if(retCarry):
+			return s,c
+		return s
+	def lsrVal(self, data):
+		val = data + zeros[0]
+		val >>= 1
+		r.cFlag(setVal = val[8])
+		return(val[:8])
+	def aslVal(self, data):
+		val = zeros[0] + data
+		val <<= 1
+		r.cFlag(setVal = val[0])
+		return(val[1:])
+	def rorVal(self,data):
+		val = r.flagReg[7] + data + zeros[0]
+		val >>= 1
+		r.cFlag(setVal = val[9])
+		return val[1:9]
+	def rolVal(self,data):
+		val = zeros[0] + data + r.flagReg[7]
+		val <<= 1
+		r.cFlag(setVal = val[0])
+		return val[1:9]
+	def andAcc(self,data):
+		r.acc &= data 
+		r.nFlag(setVal=r.acc[0])
+		r.zFlag(setVal=r.acc.any())
+	def bitTest(self,data):
+		r.nFlag(setVal=data[0])
+		r.vFlag(setVal=data[1])
+		data &= r.acc
+		r.zFlag(setVal=data.any())
+	def eorAcc(self,data):
+		r.acc ^= data 
+		r.nFlag(setVal=r.acc[0])
+		r.zFlag(setVal=r.acc.any())
+	def oraAcc(self,data):
+		r.acc |= data 
+		r.nFlag(setVal=r.acc[0])
+		r.zFlag(setVal=r.acc.any())
+	def cmpVal(self,data1,data2):
+		data1, carry = subVal(self, data1, data2, carry = 0, flags = True, cFlag=True, zFlag=True, nFlag=True, vFlag=False)
+		return zFlag()
 class execute():
 	def __init__(self):
 		global r
@@ -566,310 +776,6 @@ class execute():
 		data, carry = megaAdder(cIn=r.zeros[7],rA=data, rB=bitarray('0000 0001',endian='big'), overflow=False, carry=False, sub=True)
 		memMap(write=True,data=data)
 		incPC()
-e = execute()
-
-
-def addEight(count, cIn=0):
-	count, carryOut = megaAdder(cIn=0, carry=False, zero=False, neg=False, overflow = False, rA = count, rB = bitarray('0000 1000',endian='big'))
-	return count
-def inc4bits(count):
-	if(count[3]==r.ones[3]):
-		count[3]=r.zeros[3]
-		if(count[2]==r.ones[2]):
-			count[2]=r.zeros[2]
-			if(count[1]==r.ones[1]):
-				count[1]=r.zeros[1]
-				if(count[0]==r.ones[0]):
-					count[0]=r.zeros[0]
-					return True, count
-				else:
-					count[0]=r.ones[0]
-			else:	
-				count[1]=r.ones[1]
-		else:
-			count[2]=r.ones[2]
-	else:	
-		count[3]=r.ones[3]
-	return False, count
-def incStep(count):
-	f, count = inc4bits(count)
-	return count
-def inc8bits(count):
-	aaa = bitarray('0000',endian='big')
-	bbb = bitarray('0000',endian='big')
-	ooo = bitarray('0000 0000',endian='big')
-	aaa = count[:4]
-	bbb = count[4:]
-	carryOut, bbb = inc4bits(bbb)
-	if(carryOut):
-		carryOut, aaa = inc4bits(ccc)
-	ooo[0]=aaa[0]
-	ooo[1]=aaa[1]
-	ooo[2]=aaa[2]
-	ooo[3]=aaa[3]
-	ooo[4]=bbb[0]
-	ooo[5]=bbb[1]
-	ooo[6]=bbb[2]
-	ooo[7]=bbb[3]
-	return ooo
-def incPC():
-	global r
-	print('INC PC PRE: ', PC)
-	aaa = bitarray('0000',endian='big')
-	bbb = bitarray('0000',endian='big')
-	ccc = bitarray('0000',endian='big')
-	ddd = bitarray('0000',endian='big')
-	aaa = r.PC[:4]
-	bbb = r.PC[4:8]
-	ccc = r.PC[8:12]
-	ddd = r.PC[12:16]
-	carryOut, ddd = inc4bits(ddd)
-	if(carryOut):
-		carryOut, ccc = inc4bits(ccc)
-	if(carryOut):
-		carryOut, bbb = inc4bits(bbb)
-	if(carryOut):
-		carryOut, aaa = inc4bits(aaa)
-	if(carryOut):
-		carryOut, ddd = inc4bits(ddd)
-	if(carryOut):
-		carryOut, ccc = inc4bits(ccc)
-	if(carryOut):
-		carryOut, bbb = inc4bits(bbb)
-	if(carryOut):
-		carryOut, aaa = inc4bits(aaa)
-	r.PC[0]=aaa[0]
-	r.PC[1]=aaa[1]
-	r.PC[2]=aaa[2]
-	r.PC[3]=aaa[3]
-	r.PC[4]=bbb[0]
-	r.PC[5]=bbb[1]
-	r.PC[6]=bbb[2]
-	r.PC[7]=bbb[3]
-	r.PC[8]=ccc[0]
-	r.PC[9]=ccc[1]
-	r.PC[10]=ccc[2]
-	r.PC[11]=ccc[3]
-	r.PC[12]=ddd[0]
-	r.PC[13]=ddd[1]
-	r.PC[14]=ddd[2]
-	r.PC[15]=ddd[3]
-
-	r.eA[1:] = r.PC
-
-	r.eA[1] = r.eA[4]
-	r.eA[2] = r.eA[5]
-	r.eA[3] = r.eA[6]
-	r.eA[4] = r.eA[7]
-	r.eA[5] = r.eA[8]
-	r.eA[6] = r.eA[9]
-	r.eA[7] = r.eA[10]
-	r.eA[8] = r.eA[11]
-	r.eA[9] = r.eA[12]
-	r.eA[10] = r.eA[13]
-	r.eA[11] = r.eA[14]
-	r.eA[12] = r.eA[15]
-	r.eA[13] = r.eA[16]
-	r.eA[14] = r.zeros[0]
-	r.eA[15] = r.zeros[0]
-	r.eA[16] = r.zeros[0]
-
-	print('PC: ',r.PC)
-def memMap(write=False, data=r.zeros):
-	print('memMap. eA= ', eA)
-	if(r.eA[0] == r.ones[0] and write==False):
-		return r.acc
-	elif(r.eA[0] == r.ones[0] and write==True):
-		r.acc = data
-	mapLen = 0
-	eAddy = r.eA[1:17]
-	#print('memmap eA: ',r.eA)
-	address = eAddy.tobytes()
-	address = int.from_bytes(address, "big")
-	#print('addy: ',address)
-	addressStart = address
-	#print('aStart: ',addressStart)
-	endAddress = address + 8
-	#print('endAddress: ', endAddress)
-	if(address<2048):
-		if(write != True):	
-			data = zeroPage[addressStart:endAddress]
-			#print('0 page data: ',data)
-			return data
-		zeroPage[addressStart:endAddress] = data
-		#print('write 0 page: ',zeroPage[addressStart:endAddress],data)
-		return data
-	mapLen+=2048
-	if(address>=mapLen and address < (mapLen+2048)):
-		if(write != True):	
-			data = stack[(addressStart-mapLen):(endAddress-mapLen)]
-			#print('stack data: ', data)
-			return data
-		stack[(addressStart-mapLen):(endAddress-mapLen)] = data
-		#print('write stack: ',stack[(addressStart-mapLen):(endAddress-mapLen)])
-		return data
-	mapLen+=2048
-	if(address>=mapLen and address < (mapLen+28624)):
-		if(write != True):	
-			data = ram[(addressStart-mapLen):(endAddress-mapLen)]
-			#print('ram data: ', data)
-			return data
-		ram[(addressStart-mapLen):(endAddress-mapLen)] = data
-		#print('write ram: ',ram[(addressStart-mapLen):(endAddress-mapLen)])
-		return data
-	mapLen+=28624
-	if(address>=mapLen and address < (mapLen+48)):
-		if(write != True):	
-			data = vectors[(addressStart-mapLen):(endAddress-mapLen)]
-			#print('vectors data: ', data)
-			return data
-		vectors[(addressStart-mapLen):(endAddress-mapLen)] = data
-		#print('write vectors: ',vectors[(addressStart-mapLen):(endAddress-mapLen)])
-		return data
-	mapLen+=48
-	if(address>=mapLen and address < (mapLen+32768)):
-		if(write != True):	
-			data = rom[(addressStart-mapLen):(endAddress-mapLen)]
-			#print('rom data: ', data)
-			return data
-		rom[(addressStart-mapLen):(endAddress-mapLen)] = data
-		#print('write rom: ',rom[(addressStart-mapLen):(endAddress-mapLen)])
-		return data
-	mapLen+=32768
-	if(address>=mapLen):
-		print('address out of range')
-def fullAdder(a,b,cIn):
-	hXor = a^b
-	hOut = a&b
-	s = hXor^cIn
-	fOut = hXor&cIn
-	cOut = fOut | hOut
-	return s,cOut	
-def megaAdder(cIn=0, carry=True, zero=True, neg=True, overflow = True, rA = r.acc, rB = regB, sub = False):
-	x = r.zeros[0]
-	y=True
-	if sub:
-		cIn = cIn^r.ones[0]
-		rB = rB^r.ones
-		#print("ra: ",rA,cIn)
-	if((rA[0]^rB[0])^r.ones[0]):
-		#print('set x',rA[0])
-		x = rA[0]
-		y = True
-
-	s, cIn = fullAdder(rA[7],rB[7],cIn)
-	#print(cIn)
-	s1, cIn = fullAdder(rA[6],rB[6],cIn)
-	#print(cIn)
-	s2, cIn = fullAdder(rA[5],rB[5],cIn)
-	#print(cIn)
-	s3, cIn = fullAdder(rA[4],rB[4],cIn)
-	#print(cIn)
-	s4, cIn = fullAdder(rA[3],rB[3],cIn)
-	#print(cIn)
-	s5, cIn = fullAdder(rA[2],rB[2],cIn)
-	#print(cIn)
-	s6, cIn = fullAdder(rA[1],rB[1],cIn)
-	#print(cIn)
-	s7, cOut = fullAdder(rA[0],rB[0],cIn)
-	#print(cOut)
-	if(overflow):
-		if(s7 != x and y):
-			r.flagReg[1] = r.ones[1]
-		else:
-			r.flagReg[1] = r.zeros[1]
-	sumReg[0] = s7
-	sumReg[1] = s6
-	sumReg[2] = s5
-	sumReg[3] = s4
-	sumReg[4] = s3
-	sumReg[5] = s2
-	sumReg[6] = s1
-	sumReg[7] = s
-	if(carry):
-		r.flagReg[7] = cOut
-	if(s7):
-		r.flagReg[0] = s7
-	zF = (s|s1|s2|s3|s4|s5|s6|s7) ^ r.ones[1]
-	#print('zF: ',(zF))
-	r.flagReg[6] = (zF)
-	return sumReg, cOut
-def fetch():
-	global r
-	#print('fetchdatshi')
-	#print(r.eA,'\n')
-	data = memMap()
-	r.instructReg = data
-	print('insReg',r.instructReg)
-
-
-def search(instruction):
-	print("search instruction",instruction)
-	#this is not the real LUT, this has the last 2 bits moved to the front and address bits swapped with 1s
-	LUT=[( bitarray('0000 0000', endian='big') , e.brk ),( bitarray('0000 0010', endian='big') , e.php ),
-		( bitarray('0000 0100', endian='big') , e.bpl ),( bitarray('0000 0110', endian='big') , e.clc ),
-		( bitarray('0000 1000', endian='big') , e.jsrAbsolute ),( bitarray('0000 1010', endian='big') , e.plp ), 
-		( bitarray('0000 1100', endian='big') , e.bmi ),( bitarray('0000 1110', endian='big') , e.sec ),
-		( bitarray('0000 1111', endian='big') , e.bit ),
-
-		( bitarray('0001 0000', endian='big') , e.rti ),( bitarray('0001 0010', endian='big') , e.pha ),
-		( bitarray('0001 0100', endian='big') , e.bvc ),( bitarray('0001 0110', endian='big') , e.cli ),
-		( bitarray('0001 0111', endian='big') , e.jmp ),( bitarray('0001 1000', endian='big') , e.rts ), 
-		( bitarray('0001 1010', endian='big') , e.pla ),( bitarray('0001 1100', endian='big') , e.bvs ),
-		( bitarray('0001 1110', endian='big') , e.sei ),( bitarray('0001 1111', endian='big') , e.jmpAbsolute ),
-
-		( bitarray('0010 0010', endian='big') , e.dey ),( bitarray('0010 0100', endian='big') , e.bcc ),
-		( bitarray('0010 0110', endian='big') , e.tya ),( bitarray('0010 0111', endian='big') , e.sty ),
-		( bitarray('0010 1010', endian='big') , e.tay ),( bitarray('0010 1100', endian='big') , e.bcs ) ,
-		( bitarray('0010 1110', endian='big') , e.clv ),( bitarray('0010 1111', endian='big') , e.ldy ) ,
-		 
-		( bitarray('0011 0010', endian='big') , e.iny ),( bitarray('0011 0100', endian='big') , e.bne ),
-		( bitarray('0011 0111', endian='big') , e.cpy ),( bitarray('0011 1010', endian='big') , e.inx ) ,
-		( bitarray('0011 1100', endian='big') , e.beq ),( bitarray('0011 1111', endian='big') , e.cpx ) ,
-
-		( bitarray('0100 0111', endian='big') , e.ora ),( bitarray('0101 0111', endian='big') , e.eor ),
-		( bitarray('0110 0111', endian='big') , e.sta ),( bitarray('0111 0111', endian='big') , e.cmp ),
-		( bitarray('0100 1111', endian='big') , e.andInstruct ),( bitarray('0101 1111', endian='big') , e.adc ),
-		( bitarray('0110 1111', endian='big') , e.lda ),( bitarray('0111 1111', endian='big') , e.sbc ),
-
-		( bitarray('1000 0111', endian='big') , e.asl ),( bitarray('1000 1111', endian='big') , e.rol ) ,
-		( bitarray('1001 0111', endian='big') , e.lsr ),( bitarray('1001 1111', endian='big') , e.ror ) ,
-		( bitarray('1010 0010', endian='big') , e.txa ),( bitarray('1010 0110', endian='big') , e.txs ) ,
-		( bitarray('1010 0111', endian='big') , e.stx ),( bitarray('1010 1110', endian='big') , e.tsx ) ,
-		( bitarray('1010 1111', endian='big') , e.ldx ) ,
-		( bitarray('1010 1010', endian='big') , e.tax ),( bitarray('1011 0010', endian='big') , e.dex ),
-		( bitarray('1011 0111', endian='big') , e.dec ),( bitarray('1011 1111', endian='big') , e.inc ),
-
-		( bitarray('1110 1010', endian='big') , e.nop )]
-
-	k=bitarray('0000 0000', endian='big')
-	k[:2] = instruction[6:]
-	k[2:] = instruction[:6]
-
-	print('K: ',k)
-
-	low = 0
-	high = len(LUT)-1
-	mid = (high+low)//2
-	while(low<=high):
-		key = LUT[mid]
-		key = key[0]
-		#print('hopehope',LUT[mid])
-		if(k == key):
-			
-			return(LUT[mid])
-		if(k < key):
-			#print(k,' IS LESS THAN ',key)
-			high = mid - 1
-			mid = ( high + low ) // 2
-		if(k > key):
-			#print(k, ' IS MORE THAN ', key)
-			low = mid + 1
-			mid = ( high + low ) // 2
-	key = LUT[mid+1]
-	#print('no find', key)
-	return(key)
-
 class doAddressMode:
 	def zeroPageX(self):
 		print('zeroPageX')
@@ -945,7 +851,106 @@ class doAddressMode:
 	def accumulator(self):
 		print('accumulator mode')
 		r.eA[0] = r.ones[0]
+class instruction:
+	def __init__(self):
+		print("i am instruction class :)")
+r = registers()
+mem = memory()
+ALU = ALU()
+e = execute()
 dam = doAddressMode()
+
+
+def search(instruction):
+	print("search instruction",instruction)
+	#this is not the real LUT, this has the last 2 bits moved to the front and address bits swapped with 1s
+	LUT=[( bitarray('0000 0000', endian='big') , e.brk ),( bitarray('0000 0010', endian='big') , e.php ),
+		( bitarray('0000 0100', endian='big') , e.bpl ),( bitarray('0000 0110', endian='big') , e.clc ),
+		( bitarray('0000 1000', endian='big') , e.jsrAbsolute ),( bitarray('0000 1010', endian='big') , e.plp ), 
+		( bitarray('0000 1100', endian='big') , e.bmi ),( bitarray('0000 1110', endian='big') , e.sec ),
+		( bitarray('0000 1111', endian='big') , e.bit ),
+
+		( bitarray('0001 0000', endian='big') , e.rti ),( bitarray('0001 0010', endian='big') , e.pha ),
+		( bitarray('0001 0100', endian='big') , e.bvc ),( bitarray('0001 0110', endian='big') , e.cli ),
+		( bitarray('0001 0111', endian='big') , e.jmp ),( bitarray('0001 1000', endian='big') , e.rts ), 
+		( bitarray('0001 1010', endian='big') , e.pla ),( bitarray('0001 1100', endian='big') , e.bvs ),
+		( bitarray('0001 1110', endian='big') , e.sei ),( bitarray('0001 1111', endian='big') , e.jmpAbsolute ),
+
+		( bitarray('0010 0010', endian='big') , e.dey ),( bitarray('0010 0100', endian='big') , e.bcc ),
+		( bitarray('0010 0110', endian='big') , e.tya ),( bitarray('0010 0111', endian='big') , e.sty ),
+		( bitarray('0010 1010', endian='big') , e.tay ),( bitarray('0010 1100', endian='big') , e.bcs ) ,
+		( bitarray('0010 1110', endian='big') , e.clv ),( bitarray('0010 1111', endian='big') , e.ldy ) ,
+		 
+		( bitarray('0011 0010', endian='big') , e.iny ),( bitarray('0011 0100', endian='big') , e.bne ),
+		( bitarray('0011 0111', endian='big') , e.cpy ),( bitarray('0011 1010', endian='big') , e.inx ) ,
+		( bitarray('0011 1100', endian='big') , e.beq ),( bitarray('0011 1111', endian='big') , e.cpx ) ,
+
+		( bitarray('0100 0111', endian='big') , e.ora ),( bitarray('0101 0111', endian='big') , e.eor ),
+		( bitarray('0110 0111', endian='big') , e.sta ),( bitarray('0111 0111', endian='big') , e.cmp ),
+		( bitarray('0100 1111', endian='big') , e.andInstruct ),( bitarray('0101 1111', endian='big') , e.adc ),
+		( bitarray('0110 1111', endian='big') , e.lda ),( bitarray('0111 1111', endian='big') , e.sbc ),
+
+		( bitarray('1000 0111', endian='big') , e.asl ),( bitarray('1000 1111', endian='big') , e.rol ) ,
+		( bitarray('1001 0111', endian='big') , e.lsr ),( bitarray('1001 1111', endian='big') , e.ror ) ,
+		( bitarray('1010 0010', endian='big') , e.txa ),( bitarray('1010 0110', endian='big') , e.txs ) ,
+		( bitarray('1010 0111', endian='big') , e.stx ),( bitarray('1010 1110', endian='big') , e.tsx ) ,
+		( bitarray('1010 1111', endian='big') , e.ldx ) ,
+		( bitarray('1010 1010', endian='big') , e.tax ),( bitarray('1011 0010', endian='big') , e.dex ),
+		( bitarray('1011 0111', endian='big') , e.dec ),( bitarray('1011 1111', endian='big') , e.inc ),
+
+		( bitarray('1110 1010', endian='big') , e.nop )]
+
+	k=bitarray('0000 0000', endian='big')
+	k[:2] = instruction[6:]
+	k[2:] = instruction[:6]
+
+	print('K: ',k)
+
+	low = 0
+	high = len(LUT)-1
+	mid = (high+low)//2
+	while(low<=high):
+		key = LUT[mid]
+		key = key[0]
+		#print('hopehope',LUT[mid])
+		if(k == key):
+			
+			return(LUT[mid])
+		if(k < key):
+			#print(k,' IS LESS THAN ',key)
+			high = mid - 1
+			mid = ( high + low ) // 2
+		if(k > key):
+			#print(k, ' IS MORE THAN ', key)
+			low = mid + 1
+			mid = ( high + low ) // 2
+	key = LUT[mid+1]
+	#print('no find', key)
+	return(key)
+
+def baFromInt(integer):
+	ba = int2ba(integer,endian='big')
+	buffer = bitarray('0000 0000', endian='big')
+	index = len(ba)
+	bi=8
+	while index > 0:
+		index-=1
+		bi-=1
+		buffer[bi]=TESTTEMP[index]
+	return buffer
+
+
+def fetch():
+	global r
+	#print('fetchdatshi')
+	#print(r.eA,'\n')
+	data = memMap()
+	r.instructReg = data
+	print('insReg',r.instructReg)
+
+
+
+
 def getAddr(instruction):
 	found = search(instruction)
 	print('found',found)
