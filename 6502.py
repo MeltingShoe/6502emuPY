@@ -878,7 +878,6 @@ class _cycle:
 		self.charBuff = []
 		self.pressBuff = []
 	def output(self):
-		
 		i = 0
 		chrs = ''
 		while i < 32:
@@ -893,14 +892,29 @@ class _cycle:
 			self.charLen-=1
 			out = self.charBuff[self.charLen]
 			self.charBuff.remove(out)
-			print('OUTOUTOUTOUTOUT',str(out)[1])
-			out = ord(str(out)[1])
-			out = int2ba(out)
+			out = str(out)
+			print('OOOOOOOOOOOOOOOOUUUUUUUUUUUUUUUUUT',out[0])
+			print(out)
+			if(out[0]=="K"):
+				if(out[5]=="p"):
+					out = 32
+					out = int2ba(out)
+				elif(out[5]=="h"):
+					out = 15
+					out = int2ba(out)
+				elif(out[5]=="n"):
+					out = 10
+					out = int2ba(out)
+				elif(out[5]=="a"):
+					out = 8
+					out = int2ba(out)
+			else:
+				out = ord(out[1])
+				out = int2ba(out)
 			while(len(out)<8):
 				out = bitarray('0',endian='big') + out
 			mem.writeAddress(ba2int(r.IOStart)+self.ioPoint,out)
-			self.ioPoint+=1
-			
+			self.ioPoint+=1		
 	def cycle(self):
 		self.input()
 		r.setInstructionReg()
@@ -933,9 +947,8 @@ def on_press(key):
 		pass
 	else:
 		cpu.pressBuff.append(key)
-
 def on_release(key):
-	cpu
+	global cpu
 	if key in cpu.pressBuff:
 		cpu.charBuff.append(key)
 		cpu.pressBuff.remove(key)
