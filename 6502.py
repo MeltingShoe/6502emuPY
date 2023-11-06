@@ -883,7 +883,6 @@ class _cycle:
 		chrs = ''
 		while i < 32:
 			x = mem.readAddress(ba2int(r.IOStart) + i)
-			print('x:',x)
 			x = ba2int(x)
 			x = chr(x)
 			chrs = chrs + x
@@ -891,14 +890,17 @@ class _cycle:
 		print('ACC:'+str(ba2int(r.acc))+' PC:'+str(ba2int(r.PC))+ ' Instruction: '+str(ba2int(r.instructReg))+' Output:'+chrs)
 	def input(self):
 		if(self.charLen > 0):
-			out = self.charBuff[charLen]
-			out = ord(out)
+			self.charLen-=1
+			out = self.charBuff[self.charLen]
+			self.charBuff.remove(out)
+			print('OUTOUTOUTOUTOUT',str(out)[1])
+			out = ord(str(out)[1])
 			out = int2ba(out)
 			while(len(out)<8):
 				out = bitarray('0',endian='big') + out
-			mem.writeAddress(ba2int(r.IOStart+ioPoint),out)
-			ioPoint+=1
-			charLen-=1
+			mem.writeAddress(ba2int(r.IOStart)+self.ioPoint,out)
+			self.ioPoint+=1
+			
 	def cycle(self):
 		self.input()
 		r.setInstructionReg()
@@ -931,11 +933,13 @@ def on_press(key):
 		pass
 	else:
 		cpu.pressBuff.append(key)
+
 def on_release(key):
 	cpu
 	if key in cpu.pressBuff:
 		cpu.charBuff.append(key)
 		cpu.pressBuff.remove(key)
+		cpu.charLen+=1
 	else:
 		pass
 
