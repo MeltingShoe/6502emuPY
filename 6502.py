@@ -40,7 +40,7 @@ import serial
 			( bitarray('101x xx01', endian='big') , e.lda )         , ( bitarray('100x xx01', endian='big') , e.sta ),
 			( bitarray('011x xx01', endian='big') , e.adc )         , ( bitarray('010x xx01', endian='big') , e.eor ),
 			( bitarray('001x xx01', endian='big') , e.andInstruct ) , ( bitarray('000x xx01', endian='big') , e.ora ) ]'''
-debugPrints = False
+debugPrints = True
 
 class _registers:
 	global mem
@@ -129,23 +129,26 @@ class _memory:
 		self.address = bitarray('0000 0000 0000 0000',endian='big')
 		self.eStart = (ba2int(self.address)*8)
 		self.eStop = self.eStart+8
+		self.accMode = False
 		self.resetVector = bitarray('0000 0000 0000 0000',endian='big')
 		self.nmiVector = bitarray('0000 1111 0000 0000',endian='big')
 		self.irqVector = bitarray('0000 1100 0000 0000',endian='big')
-		self.accMode = False
+		
 		self.addIndex = 0
 
 
 	def importPROG(self,prog,startIndex):
-		i=startIndex
-		while i < len(prog):
-			self.memoryBlock[i] = prog[i]
+		i=0
+		j=0
+		while i*8 < len(prog):
+			self.writeAddress(i+startIndex,prog[j:j+8])
 			i+=1
-		i=startIndex
-		while i < len(prog):
+			j+=8
+		i=0
+		while i*8 < len(prog):
 			if(debugPrints):
-				print(str(int(i/8)) + ": " + str(self.memoryBlock[i:i+8]))
-			i+=8
+				print(i+startIndex,self.readAddress(i+startIndex))
+			i+=1
 		return prog
 
 	
@@ -272,12 +275,11 @@ class _memory:
 
 
 	def getResetV(self):
-		print(self.readAddress(bitarray('1111 1111 1111 1100',endian='big')) + self.readAddress(bitarray('1111 1111 1111 1101',endian='big')))
-		return self.readAddress(bitarray('1111 1111 1111 1100',endian='big')) + self.readAddress(bitarray('1111 1111 1111 1101',endian='big'))
+		return bitarray('1000 0000 0000 0000',endian='big')
 	def getNMIV(self):
 		return self.readAddress(bitarray('1111 1111 1111 1010',endian='big')) + self.readAddress(bitarray('1111 1111 1111 1011',endian='big'))
 	def getIRQV(self):
-		return self.readAddress(bitarray('1111 1111 1111 1110',endian='big')) + self.readAddress(bitarray('1111 1111 1111 1111',endian='big'))
+		return bitarray('1000 0000 0000 0000',endian='big')
 class _ALU:
 	global r
 	global debugPrints
@@ -909,6 +911,7 @@ class _cycle:
 				elif(out[5]=="h"):
 					out = 15
 					out = int2ba(out)
+					return
 				elif(out[5]=="n"):
 					out = 10
 					out = int2ba(out)
@@ -933,7 +936,7 @@ class _cycle:
 		self.output()
 	def reset(self):
 		print('RESETTING')
-		r.PC = mem.getResetV()
+		r.PC = bitarray('1000 0000 0000 0000', endian='big')
 		r.acc = r.zeros()
 		r.regX = r.zeros()
 		r.regY = r.zeros()
@@ -979,23 +982,27 @@ SBCimm=bitarray('1110 1001',endian='big')
 BEQ=bitarray('1111 0000',endian='big')
 STXabs=bitarray('1000 1110',endian='big')
 
+JSR=bitarray('0010 0000', endian='big')
+RTI=bitarray('0100 0000', endian='big')
+
 IOIndexHigh=bitarray('0000 0010',endian='big')
 inIndexLow=bitarray('0000 0000',endian='big')
 outIndexLow=bitarray('1000 0000',endian='big')
-jmpH=bitarray('0000 0000',endian='big')
+jmpH=bitarray('1000 0000',endian='big')
 jmpL=bitarray('0000 0000', endian='big')
-sHigh = bitarray('0000 0000', endian='big')
+sHigh = bitarray('1000 0000', endian='big')
 sLow = bitarray('0000 0000', endian='big')
 s=bitarray('0000 1010', endian='big')
 xR=bitarray('0000 0000',endian='big')
 offs=bitarray('0000 1000',endian='big')
 rL=bitarray('0001 0100',endian='big')
-rH=bitarray('0000 0000',endian='big')
+rH=bitarray('1000 0000',endian='big')
 prog3 = LDAabsX + IOIndexHigh + inIndexLow + STAabsX + IOIndexHigh + outIndexLow + INX + JMPabs + jmpH + jmpL
 
 prog4 = LDAabsX + IOIndexHigh + inIndexLow +SBCimm + s + BEQ + offs + STAabsX + IOIndexHigh + outIndexLow + INX + JMPabs + jmpH + jmpL + STXabs + rH + rL + JMPabs + jmpH + jmpL + xR
 cpu.reset()
-mem.importPROG(prog4,0)
+
+mem.importPROG(prog3,32768)
 SerialObj = serial.Serial(port='COM3') 
 SerialObj.baudrate = 9600  # set Baud rate to 9600
 SerialObj.bytesize = 8   # Number of data bits = 8
@@ -1004,7 +1011,7 @@ SerialObj.stopbits = 1   # Number of Stop bits = 1
 time.sleep(3)
 print("RESET FINISHED...  RUNNING!")
 print("RESET FINISHED...  RUNNING!")
-
+print(r.PC)
 while True:
 	cpu.cycle()
 	listener = keyboard.Listener(on_press=on_press,on_release=on_release)
