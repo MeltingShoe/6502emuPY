@@ -4,6 +4,7 @@ from bitarray.util import ba2int
 from bitarray.util import int2ba
 from pynput import keyboard
 import time
+import serial
 
 '''LUT = [ ( bitarray('1110 1010', endian='big') , e.nop ) , ( bitarray('1110 1010', endian='big') , e.dex ),
 			( bitarray('1011 1010', endian='big') , e.tsx ) , ( bitarray('1110 1010', endian='big') , e.tax ),
@@ -39,10 +40,7 @@ import time
 			( bitarray('101x xx01', endian='big') , e.lda )         , ( bitarray('100x xx01', endian='big') , e.sta ),
 			( bitarray('011x xx01', endian='big') , e.adc )         , ( bitarray('010x xx01', endian='big') , e.eor ),
 			( bitarray('001x xx01', endian='big') , e.andInstruct ) , ( bitarray('000x xx01', endian='big') , e.ora ) ]'''
-
 debugPrints = False
-
-
 
 class _registers:
 	global mem
@@ -510,16 +508,16 @@ class _execute:
 
 	def php(self,offSet):
 		mem.writeAddress(ba2int(r.stackPoint) + ba2int(r.stackStart), r.flagReg)
-		r.stackPoint = incVal(r.stackPoint)        
+		r.stackPoint = ALU.incVal(r.stackPoint)        
 	def plp(self,offSet):
 		r.flagReg = mem.readAddress(ba2int(r.stackPoint) + ba2int(r.stackStart))
-		r.stackPoint = decVal(r.stackPoint)      
+		r.stackPoint = ALU.decVal(r.stackPoint)      
 	def pha(self,offSet):
 		mem.writeAddress(ba2int(r.stackPoint) + ba2int(r.stackStart), r.acc)
-		r.stackPoint = incVal(r.stackPoint)        
+		r.stackPoint = ALU.incVal(r.stackPoint)        
 	def pla(self,offSet):
 		r.acc = mem.readAddress(ba2int(r.stackPoint) + ba2int(r.stackStart))
-		r.stackPoint = decVal(r.stackPoint) 
+		r.stackPoint = ALU.decVal(r.stackPoint) 
 	def dey(self,offSet):         #DONE
 		if(debugPrints):
 			print('Run DEY')
@@ -877,16 +875,26 @@ class _cycle:
 		self.charLen = 0
 		self.charBuff = []
 		self.pressBuff = []
+		self.outLen = 0
+		self.IOIndex = 0
+
 	def output(self):
-		i = 0
-		chrs = ''
-		while i < 32:
-			x = mem.readAddress(ba2int(r.IOStart) + i)
-			x = ba2int(x)
-			x = chr(x)
-			chrs = chrs + x
-			i+=1
-		print('ACC:'+str(ba2int(r.acc))+' PC:'+str(ba2int(r.PC))+ ' Instruction: '+str(ba2int(r.instructReg))+' Output:'+chrs)
+		if(self.outLen>0):
+			self.outLen-=1
+			i9 = 0
+			while(i9<self.ioPoint):
+
+				x = mem.readAddress(ba2int(r.IOStart)+i9)
+				i9+=1
+				#b = bitarray(x, endian='little')
+				b = x.tobytes()
+				self.IOIndex+=1
+				#print('inouttput',b)
+				SerialObj.write(b)
+		
+				#SerialObj.write(bytes(10))
+			self.outLen = 0
+		print('ACC:'+str(ba2int(r.acc))+' PC:'+str(ba2int(r.PC))+ ' Instruction: '+str(ba2int(r.instructReg)))
 	def input(self):
 		if(self.charLen > 0):
 			self.charLen-=1
@@ -894,7 +902,6 @@ class _cycle:
 			self.charBuff.remove(out)
 			out = str(out)
 			print('OOOOOOOOOOOOOOOOUUUUUUUUUUUUUUUUUT',out[0])
-			print(out)
 			if(out[0]=="K"):
 				if(out[5]=="p"):
 					out = 32
@@ -914,6 +921,8 @@ class _cycle:
 			while(len(out)<8):
 				out = bitarray('0',endian='big') + out
 			mem.writeAddress(ba2int(r.IOStart)+self.ioPoint,out)
+			print(out)
+			self.outLen+=1
 			self.ioPoint+=1		
 	def cycle(self):
 		self.input()
@@ -966,17 +975,33 @@ BRK = bitarray('0000 0000',endian='big')
 LDAabsX= bitarray('1011 1101',endian='big')
 STAabsX=bitarray('1001 1101',endian='big')
 INX=bitarray('1110 1000',endian='big')
+SBCimm=bitarray('1110 1001',endian='big')
+BEQ=bitarray('1111 0000',endian='big')
+STXabs=bitarray('1000 1110',endian='big')
 
 IOIndexHigh=bitarray('0000 0010',endian='big')
 inIndexLow=bitarray('0000 0000',endian='big')
 outIndexLow=bitarray('1000 0000',endian='big')
 jmpH=bitarray('0000 0000',endian='big')
 jmpL=bitarray('0000 0000', endian='big')
+sHigh = bitarray('0000 0000', endian='big')
+sLow = bitarray('0000 0000', endian='big')
+s=bitarray('0000 1010', endian='big')
+xR=bitarray('0000 0000',endian='big')
+offs=bitarray('0000 1000',endian='big')
+rL=bitarray('0001 0100',endian='big')
+rH=bitarray('0000 0000',endian='big')
 prog3 = LDAabsX + IOIndexHigh + inIndexLow + STAabsX + IOIndexHigh + outIndexLow + INX + JMPabs + jmpH + jmpL
-'0000 0010 0000 0000'
-cpu.reset()
-mem.importPROG(prog3,0)
 
+prog4 = LDAabsX + IOIndexHigh + inIndexLow +SBCimm + s + BEQ + offs + STAabsX + IOIndexHigh + outIndexLow + INX + JMPabs + jmpH + jmpL + STXabs + rH + rL + JMPabs + jmpH + jmpL + xR
+cpu.reset()
+mem.importPROG(prog4,0)
+SerialObj = serial.Serial(port='COM3') 
+SerialObj.baudrate = 9600  # set Baud rate to 9600
+SerialObj.bytesize = 8   # Number of data bits = 8
+SerialObj.parity  ='N'   # No parity
+SerialObj.stopbits = 1   # Number of Stop bits = 1
+time.sleep(3)
 print("RESET FINISHED...  RUNNING!")
 print("RESET FINISHED...  RUNNING!")
 
